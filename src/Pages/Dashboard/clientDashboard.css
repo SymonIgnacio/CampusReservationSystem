@@ -1,0 +1,297 @@
+.body {
+  background-color: #fff;
+}
+
+.border {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid black;
+  padding-top: 10px;
+  row-gap: 10px;
+}
+
+.btn-goto {
+  padding: 8px 16px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  height: 40px;
+  width: 125px;
+}
+
+.btn-goto:hover {
+  background-color: #3367d6;
+}
+
+.btn-search {
+  padding: 8px 12px;
+  background-color: #34a853;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-search-container{
+  display: flex;
+  width: 350px
+}
+
+.btn-search:hover {
+  background-color: #2d8e49;
+}
+
+.bx-search {
+  font-size: 16px;
+}
+
+.calendar-container {
+  font-family: Arial, sans-serif;
+  margin: 0 auto;
+  padding: 20px;
+  width: 800px;
+}
+
+.calendar-container h1 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  margin-top: -20px;
+}
+
+.calendar-container h2 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  justify-content: center;
+  flex-direction: row;
+}
+
+.calendar-nav span {
+  margin: 0 15px;
+  font-weight: bold;
+}
+
+.calendar-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.calendar-table th {
+  padding: 10px;
+  text-align: center;
+  background-color: #f5f5f5;
+  font-weight: normal;
+}
+
+.calendar-table td {
+  padding: 15px;
+  text-align: center;
+  border: 1px solid #e0e0e0;
+  height: 30px;
+}
+
+.calendar-table td.inactive {
+  color: #aaa;
+  background-color: #f9f9f9;
+}
+
+.calendar-table td.today {
+  background-color: #e6f7ff;
+  font-weight: bold;
+  color: #1890ff;
+}
+
+.dashboard-container {
+  display: flex;
+  padding: 10px;
+  margin-left: 250px; /* Same as sidebar width */
+  transition: margin-left 0.3s ease;
+  width: calc(100% - 250px);
+}
+
+.dashboard-container.collapsed {
+  margin-left: 80px; /* Collapsed sidebar width */
+  width: calc(100% - 80px);
+}
+
+.dashboard-label {
+  margin-block-end: 5px;
+  margin-block-start: 5px;
+}
+
+.event-planner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.events {
+  border: 1px solid black;
+  padding: 20px;
+  padding-top: 15px;
+}
+
+.finished {
+  height: 50px;
+  background-color: #FF0000;
+  border: 0px;
+}
+
+.legend {
+  border: 1px solid black;
+  padding: 20px;
+  padding-top: 15px;
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+.search-container {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.search-container > div {
+  display: flex;
+}
+
+.search-container input[type="text"] {
+  flex-grow: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px 0 0 4px;
+  font-size: 14px;
+  outline: none;
+  width: 250px;
+}
+
+.search-container input[type="text"]:focus {
+  border-color: #999;
+}
+
+.upcoming {
+  height: 50px;
+  background-color: #00FF00;
+  border: 0px;
+}
+
+.sidebar, .dashboard-container {
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    margin-left: 0;
+    width: 100%;
+    padding-top: 60px; /* Space for mobile menu button */
+  }
+
+  .dashboard-container.collapsed {
+    margin-left: 80px;
+    width: calc(100% - 80px);
+  }
+
+  .calendar-container {
+    width: 100%;
+    padding: 10px;
+  }
+  
+  .event-planner {
+    flex-direction: column;
+  }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 300px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  text-align: center;
+  color: #333;
+}
+
+.modal-input-group {
+  margin-bottom: 15px;
+}
+
+.modal-input-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
+.modal-input-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.modal-ok {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.modal-ok:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.modal-cancel {
+  background-color: #f44336;
+  color: white;
+}

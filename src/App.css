@@ -1,0 +1,25 @@
+/* Global page title styling */
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+  color: #333;
+}
+/* Global page title styling */
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  padding-left: 20px;
+  border-bottom: 2px solid #f0f0f0;
+  color: #333;
+}
+/* Common container styling */
+.content-container {
+  padding-left: 20px;
+}

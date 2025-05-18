@@ -1,0 +1,292 @@
+.form-container {
+  width: 90%;
+  max-width: 1000px;
+  margin: 20px auto;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-container h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+  font-size: 24px;
+  font-weight: bold;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.top-fields {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.top-fields > div {
+  width: 48%;
+}
+
+.reference-number {
+  background-color: #f9f9f9;
+  color: #666;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-section {
+  margin-bottom: 20px;
+}
+
+label {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+input[type="email"],
+select {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input[readonly] {
+  background-color: #f9f9f9;
+  cursor: not-allowed;
+}
+
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.radio-group input[type="radio"] {
+  margin-right: 5px;
+}
+
+.radio-group input[type="text"] {
+  width: 200px;
+  margin-left: 10px;
+}
+
+.range-group {
+  display: flex;
+  gap: 20px;
+}
+
+.range-group label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range-group input {
+  flex: 1;
+}
+
+.pax-group {
+  width: 100%;
+}
+
+.pax-inputs {
+  display: flex;
+  gap: 20px;
+}
+
+.pax-inputs > div {
+  flex: 1;
+}
+
+.pax-inputs label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.equipment-section {
+  margin-top: 10px;
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 4px;
+}
+
+.equipment-add {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.equipment-add select {
+  flex: 2;
+}
+
+.quantity-input {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.quantity-input label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.quantity-input input {
+  width: 60px;
+}
+
+.add-equipment-btn {
+  padding: 8px 15px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.equipment-list {
+  margin-top: 15px;
+}
+
+.equipment-list h4 {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.equipment-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.equipment-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.remove-equipment-btn {
+  padding: 5px 10px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.message {
+  padding: 10px 15px;
+  margin: 20px 0;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.message.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.message.error {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.submit-button {
+  padding: 12px 30px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+  background-color: #3367d6;
+}
+
+.submit-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .form-container {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .top-fields {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .top-fields > div {
+    width: 100%;
+  }
+  
+  .range-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .pax-inputs {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .equipment-add {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
