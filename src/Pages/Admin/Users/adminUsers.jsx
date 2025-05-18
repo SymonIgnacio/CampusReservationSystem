@@ -35,7 +35,9 @@ function AdminUsers() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost/CampusReservationSystem-main/CampusReservationSystem-main/src/api/get_users.php');
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_users.php', {
+        credentials: 'include'
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -109,11 +111,12 @@ function AdminUsers() {
     e.preventDefault();
     
     try {
-      const response = await fetch('http://localhost/CampusReservationSystem-main/CampusReservationSystem-main/src/api/add_user.php', {
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/add_user.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(newUser),
       });
       
@@ -152,11 +155,12 @@ function AdminUsers() {
     }
     
     try {
-      const response = await fetch('http://localhost/CampusReservationSystem-main/CampusReservationSystem-main/src/api/delete_user.php', {
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/delete_user.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ userId }),
       });
       

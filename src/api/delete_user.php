@@ -1,12 +1,9 @@
 <?php
-// delete_user.php - Delete a user from the database
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Set headers
-header("Access-Control-Allow-Origin: *");
+// Direct CORS headers first to ensure they're sent
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json");
 
 // Handle preflight OPTIONS request
@@ -15,8 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+// Include session configuration
+require_once 'session_config.php';
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Only allow POST requests
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
     echo json_encode([
         "success" => false,
         "message" => "Method not allowed"

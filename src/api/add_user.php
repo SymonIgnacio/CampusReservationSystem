@@ -1,18 +1,25 @@
 <?php
-// add_user.php - Add a new user to the database
+// Direct CORS headers first to ensure they're sent
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json");
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Include session configuration
+require_once 'session_config.php';
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Add CORS headers
-if (!headers_sent()) {
-    header("Access-Control-Allow-Origin: *");
-    header("Access-Control-Allow-Headers: Content-Type");
-    header("Access-Control-Allow-Methods: POST, OPTIONS");
-    header("Content-Type: application/json");
-}
-
 // Only allow POST requests
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
     echo json_encode([
         "success" => false,
         "message" => "Method not allowed"

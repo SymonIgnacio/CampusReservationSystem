@@ -1,8 +1,20 @@
 <?php
-// Include CORS headers
-header("Access-Control-Allow-Origin: *");
+// Direct CORS headers first to ensure they're sent
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json");
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Include session configuration
+require_once 'session_config.php';
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
@@ -11,7 +23,6 @@ $host = "localhost";
 $dbname = "campus_db"; 
 $dbuser = "root";
 $dbpass = "";
-header("Content-Type: application/json");
 
 $conn = new mysqli($host, $dbuser, $dbpass, $dbname);
 
@@ -29,7 +40,7 @@ $usersTableExists = $conn->query("SHOW TABLES LIKE 'users'")->num_rows > 0;
 if (!$usersTableExists) {
     // Create users table
     $createTableSQL = "CREATE TABLE users (
-        user_id INT(11) AUTO_INCREMENT PRIMARY KEY,
+        id INT(11) AUTO_INCREMENT PRIMARY KEY,
         firstname VARCHAR(255) NOT NULL,
         middlename VARCHAR(255),
         lastname VARCHAR(255) NOT NULL,
@@ -77,8 +88,8 @@ if (!$usersTableExists) {
     $stmt->close();
 }
 
-// Get only students and faculty from the table (exclude admins)
-$sql = "SELECT user_id, firstname, lastname, email, username, department, role FROM users WHERE role IN ('student', 'faculty')";
+// Get all users from the table
+$sql = "SELECT id, firstname, lastname, email, username, department, role FROM users";
 $result = $conn->query($sql);
 
 if (!$result) {
