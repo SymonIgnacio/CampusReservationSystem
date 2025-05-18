@@ -177,7 +177,7 @@ const RequestVenueForm = () => {
       console.log("Sending request data:", requestData);
       
       // Send data to backend
-      const response = await fetch('http://localhost/CampusReservationSystem-main/CampusReservationSystem-main/src/api/create_request.php', {
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/create_request.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

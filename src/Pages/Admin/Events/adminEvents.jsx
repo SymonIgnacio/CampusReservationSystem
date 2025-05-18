@@ -62,10 +62,30 @@ function AdminEvents({ isCollapsed }) {
         month === new Date().getMonth() && 
         year === new Date().getFullYear();
       
+      // Check if there are events on this day
+      const currentDate = new Date(year, month, i);
+      const hasUpcomingEvent = upcomingEvents.some(event => {
+        const eventDate = getEventDate(event);
+        return eventDate && 
+               eventDate.getDate() === i && 
+               eventDate.getMonth() === month && 
+               eventDate.getFullYear() === year;
+      });
+      
+      const hasFinishedEvent = finishedEvents.some(event => {
+        const eventDate = getEventDate(event);
+        return eventDate && 
+               eventDate.getDate() === i && 
+               eventDate.getMonth() === month && 
+               eventDate.getFullYear() === year;
+      });
+      
       dates.push({
         day: i,
         currentMonth: true,
-        isToday: isToday
+        isToday: isToday,
+        hasUpcomingEvent: hasUpcomingEvent,
+        hasFinishedEvent: hasFinishedEvent
       });
     }
 
@@ -90,7 +110,12 @@ function AdminEvents({ isCollapsed }) {
         {week.map((dayObj, dayIndex) => (
           <td 
             key={`day-${weekIndex}-${dayIndex}`}
-            className={`${!dayObj.currentMonth ? 'inactive' : ''} ${dayObj.isToday ? 'today' : ''}`}
+            className={`
+              ${!dayObj.currentMonth ? 'inactive' : ''} 
+              ${dayObj.isToday ? 'today' : ''} 
+              ${dayObj.hasUpcomingEvent ? 'has-upcoming-event' : ''} 
+              ${dayObj.hasFinishedEvent ? 'has-finished-event' : ''}
+            `}
           >
             {dayObj.day}
           </td>
@@ -206,14 +231,29 @@ function AdminEvents({ isCollapsed }) {
   });
 
   // Separate upcoming and finished events
-  const upcomingEvents = currentMonthEvents.filter(event => {
+  const upcomingEvents = filteredEvents.filter(event => {
     const eventDate = getEventDate(event);
     return eventDate && eventDate >= new Date();
   });
 
-  const finishedEvents = currentMonthEvents.filter(event => {
+  const finishedEvents = filteredEvents.filter(event => {
     const eventDate = getEventDate(event);
     return eventDate && eventDate < new Date();
+  });
+  
+  // Current month events for display in the list
+  const currentMonthUpcomingEvents = upcomingEvents.filter(event => {
+    const eventDate = getEventDate(event);
+    return eventDate && 
+           eventDate.getMonth() === month && 
+           eventDate.getFullYear() === year;
+  });
+  
+  const currentMonthFinishedEvents = finishedEvents.filter(event => {
+    const eventDate = getEventDate(event);
+    return eventDate && 
+           eventDate.getMonth() === month && 
+           eventDate.getFullYear() === year;
   });
 
   // Format date for display
@@ -286,9 +326,9 @@ function AdminEvents({ isCollapsed }) {
               <p className="loading-message">Loading events...</p>
             ) : error ? (
               <p className="error-message">{error}</p>
-            ) : upcomingEvents.length > 0 ? (
+            ) : currentMonthUpcomingEvents.length > 0 ? (
               <ul className="event-list">
-                {upcomingEvents.map(event => (
+                {currentMonthUpcomingEvents.map(event => (
                   <li key={event.id || `event-${Math.random()}`} className="event-item upcoming">
                     <span className="event-date">
                       {formatEventDate(event)}
@@ -308,13 +348,14 @@ function AdminEvents({ isCollapsed }) {
               <p className="loading-message">Loading events...</p>
             ) : error ? (
               <p className="error-message">{error}</p>
-            ) : finishedEvents.length > 0 ? (
+            ) : currentMonthFinishedEvents.length > 0 ? (
               <ul className="event-list">
-                {finishedEvents.map(event => (
+                {currentMonthFinishedEvents.map(event => (
                   <li key={event.id || `event-${Math.random()}`} className="event-item finished">
                     <span className="event-date">
                       {formatEventDate(event)}
                     </span>
+                    <br />
                     <span className="event-title">{event.name || event.title || event.activity || 'Untitled Event'}</span>
                   </li>
                 ))}
