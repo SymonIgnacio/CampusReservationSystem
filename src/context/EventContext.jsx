@@ -4,7 +4,7 @@ import React, { createContext, useState, useEffect } from 'react';
 export const EventContext = createContext();
 
 // Base API URL - adjust this to match your server configuration
-const API_BASE_URL = 'http://localhost/CampusReservationSystem-main/CampusReservationSystem-main/src/api';
+const API_BASE_URL = 'http://localhost/CampusReservationSystem/src/api';
 
 // EventContext Provider Component
 const EventProvider = ({ children }) => {
@@ -23,13 +23,37 @@ const EventProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            console.log('Fetching events from:', `${API_BASE_URL}/events.php`);
+            console.log('Fetching events from:', `${API_BASE_URL}/requests.php`);
             
-            // Use mock data for now to avoid JSON parsing issues
-            const mockEvents = getMockEvents();
-            setEvents(mockEvents);
-            calculateStats(mockEvents);
-            return;
+            const response = await fetch(`${API_BASE_URL}/requests.php`, {
+                cache: 'no-cache'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            const text = await response.text();
+            
+            try {
+                const data = JSON.parse(text);
+                
+                if (data.success && data.requests) {
+                    console.log('Events loaded:', data.requests);
+                    setEvents(data.requests);
+                    calculateStats(data.requests);
+                    return;
+                } else {
+                    throw new Error(data.message || 'Failed to fetch events');
+                }
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                // Fallback to mock data
+                const mockEvents = getMockEvents();
+                setEvents(mockEvents);
+                calculateStats(mockEvents);
+                return;
+            }
             
             /*
             const response = await fetch(`${API_BASE_URL}/events.php`, {

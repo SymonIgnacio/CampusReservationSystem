@@ -83,13 +83,31 @@ function AdminRequests() {
     setProcessingId(id);
     
     try {
-      const result = await updateEventStatus(id, 'approved');
-      if (result.success) {
-        // The events will be refreshed by the updateEventStatus function
-        // Just update the filtered requests
-        setFilteredRequests(prev => prev.filter(request => getRequestId(request) !== id));
-      } else {
-        alert(`Failed to approve request: ${result.message}`);
+      // Call the API to update status
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/update_event_status.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: id, status: 'approved' }),
+      });
+      
+      const text = await response.text();
+      console.log("Raw response:", text);
+      
+      try {
+        const result = JSON.parse(text);
+        if (result.success) {
+          // Update UI
+          setFilteredRequests(prev => prev.filter(request => getRequestId(request) !== id));
+          // Refresh data
+          refreshData();
+        } else {
+          alert(`Failed to approve request: ${result.message}`);
+        }
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        alert("Error: Invalid response from server");
       }
     } catch (error) {
       console.error("Error approving request:", error);
@@ -110,13 +128,31 @@ function AdminRequests() {
     setProcessingId(id);
     
     try {
-      const result = await updateEventStatus(id, 'declined');
-      if (result.success) {
-        // The events will be refreshed by the updateEventStatus function
-        // Just update the filtered requests
-        setFilteredRequests(prev => prev.filter(request => getRequestId(request) !== id));
-      } else {
-        alert(`Failed to decline request: ${result.message}`);
+      // Call the API to update status
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/update_event_status.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: id, status: 'declined' }),
+      });
+      
+      const text = await response.text();
+      console.log("Raw response:", text);
+      
+      try {
+        const result = JSON.parse(text);
+        if (result.success) {
+          // Update UI
+          setFilteredRequests(prev => prev.filter(request => getRequestId(request) !== id));
+          // Refresh data
+          refreshData();
+        } else {
+          alert(`Failed to decline request: ${result.message}`);
+        }
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        alert("Error: Invalid response from server");
       }
     } catch (error) {
       console.error("Error declining request:", error);

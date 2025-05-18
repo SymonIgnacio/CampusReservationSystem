@@ -1,116 +1,84 @@
 <?php
-// update_event_status.php - Update event status
+// Disable error display in response
+ini_set('display_errors', 0);
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
-// Set headers
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: *");
-header("Access-Control-Allow-Methods: *");
+// Direct CORS headers first - must be before any output
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json");
 
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
-    exit;
+    exit();
 }
 
-// Connect to DB
-$host = "localhost";
-$dbname = "campus_db"; 
-$dbuser = "root";
-$dbpass = "";
-
-$conn = new mysqli($host, $dbuser, $dbpass, $dbname);
-
-if ($conn->connect_error) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Connection failed: " . $conn->connect_error
-    ]);
-    exit;
-}
-
-// Get JSON data from request
-$data = json_decode(file_get_contents('php://input'), true);
-
-if (!$data || !isset($data['id']) || !isset($data['status'])) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Missing required parameters: id and status"
-    ]);
-    exit;
-}
-
-$id = intval($data['id']);
-$status = $conn->real_escape_string($data['status']);
-
-// Check which table exists
-$reservationsTableExists = $conn->query("SHOW TABLES LIKE 'reservations'")->num_rows > 0;
-$eventsTableExists = $conn->query("SHOW TABLES LIKE 'events'")->num_rows > 0;
-
-$tableName = $reservationsTableExists ? 'reservations' : ($eventsTableExists ? 'events' : null);
-
-if (!$tableName) {
-    echo json_encode([
-        "success" => false,
-        "message" => "No events or reservations table found in database"
-    ]);
-    exit;
-}
-
-// Check if the table has a status column
-$hasStatusColumn = false;
-$columnsResult = $conn->query("DESCRIBE $tableName");
-while ($column = $columnsResult->fetch_assoc()) {
-    if ($column['Field'] === 'status') {
-        $hasStatusColumn = true;
-        break;
+try {
+    // Only allow POST requests
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception("Method not allowed");
     }
-}
 
-// Add status column if it doesn't exist
-if (!$hasStatusColumn) {
-    $alterSql = "ALTER TABLE $tableName ADD COLUMN status VARCHAR(50) DEFAULT 'approved'";
-    if (!$conn->query($alterSql)) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Failed to add status column: " . $conn->error
-        ]);
-        exit;
+    // Get JSON data from request
+    $data = json_decode(file_get_contents("php://input"), true);
+
+    if (!$data || !isset($data['id']) || !isset($data['status'])) {
+        throw new Exception("Missing required fields: id and status");
     }
-}
 
-// Determine the ID column name
-$idColumnName = 'id';
-if ($tableName === 'reservations') {
-    // Check if reservation_id exists
-    $hasReservationId = false;
-    $columnsResult = $conn->query("DESCRIBE reservations");
-    while ($column = $columnsResult->fetch_assoc()) {
-        if ($column['Field'] === 'reservation_id') {
-            $hasReservationId = true;
-            $idColumnName = 'reservation_id';
-            break;
-        }
+    $eventId = $data['id'];
+    $newStatus = $data['status'];
+
+    // Validate status
+    $validStatuses = ['pending', 'approved', 'declined'];
+    if (!in_array($newStatus, $validStatuses)) {
+        throw new Exception("Invalid status value. Must be one of: " . implode(", ", $validStatuses));
     }
-}
 
-// Update the event status
-$sql = "UPDATE $tableName SET status = '$status' WHERE $idColumnName = $id";
-$result = $conn->query($sql);
+    // Connect to DB
+    $host = "localhost";
+    $dbname = "campus_db"; 
+    $dbuser = "root";
+    $dbpass = "";
 
-if ($result) {
+    $conn = new mysqli($host, $dbuser, $dbpass, $dbname);
+
+    if ($conn->connect_error) {
+        throw new Exception("Connection failed: " . $conn->connect_error);
+    }
+
+    // Update event status in reservations table
+    $stmt = $conn->prepare("UPDATE reservations SET status = ? WHERE reservation_id = ?");
+    $stmt->bind_param("si", $newStatus, $eventId);
+
+    if (!$stmt->execute()) {
+        throw new Exception("Error updating event status: " . $stmt->error);
+    }
+
+    if ($stmt->affected_rows === 0) {
+        throw new Exception("No event found with ID: $eventId");
+    }
+
+    $stmt->close();
+    $conn->close();
+
+    // Return success response
     echo json_encode([
         "success" => true,
-        "message" => "Event status updated successfully"
+        "message" => "Event status updated successfully to $newStatus"
     ]);
-} else {
+
+} catch (Exception $e) {
+    // Log error to server log
+    error_log("Error in update_event_status.php: " . $e->getMessage());
+    
+    // Return error as JSON
     echo json_encode([
         "success" => false,
-        "message" => "Failed to update event status: " . $conn->error
+        "message" => $e->getMessage()
     ]);
 }
-
-$conn->close();
 ?>
