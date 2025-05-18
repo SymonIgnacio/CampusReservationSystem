@@ -1,5 +1,9 @@
 <?php
-// Direct CORS headers first to ensure they're sent
+// Disable error display in response
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// Direct CORS headers first - must be before any output
 header("Access-Control-Allow-Origin: http://localhost:3000");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
@@ -12,105 +16,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Include session configuration
-require_once 'session_config.php';
+try {
+    // Only allow POST requests
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception("Method not allowed");
+    }
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+    // Get JSON data from request
+    $data = json_decode(file_get_contents("php://input"), true);
 
-// Only allow POST requests
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
-    echo json_encode([
-        "success" => false,
-        "message" => "Method not allowed"
-    ]);
-    exit();
-}
+    if (!$data || !isset($data['userId'])) {
+        throw new Exception("Missing user ID");
+    }
 
-// Get JSON data from request
-$data = json_decode(file_get_contents("php://input"), true);
+    $userId = $data['userId'];
 
-if (!$data || !isset($data['userId'])) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Missing user ID"
-    ]);
-    exit();
-}
+    // Connect to DB
+    $host = "localhost";
+    $dbname = "campus_db"; 
+    $dbuser = "root";
+    $dbpass = "";
 
-$userId = $data['userId'];
+    $conn = new mysqli($host, $dbuser, $dbpass, $dbname);
 
-// Connect to DB
-$host = "localhost";
-$dbname = "campus_db"; 
-$dbuser = "root";
-$dbpass = "";
+    if ($conn->connect_error) {
+        throw new Exception("Connection failed: " . $conn->connect_error);
+    }
 
-$conn = new mysqli($host, $dbuser, $dbpass, $dbname);
+    // Check if users table exists
+    $tableCheck = $conn->query("SHOW TABLES LIKE 'users'");
+    if ($tableCheck->num_rows == 0) {
+        throw new Exception("Users table does not exist");
+    }
 
-if ($conn->connect_error) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Connection failed: " . $conn->connect_error
-    ]);
-    exit();
-}
+    // Check if user exists
+    $checkStmt = $conn->prepare("SELECT * FROM users WHERE user_id = ?");
+    $checkStmt->bind_param("i", $userId);
+    $checkStmt->execute();
+    $result = $checkStmt->get_result();
 
-// Check if users table exists
-$tableCheck = $conn->query("SHOW TABLES LIKE 'users'");
-if ($tableCheck->num_rows == 0) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Users table does not exist"
-    ]);
-    exit();
-}
+    if ($result->num_rows === 0) {
+        throw new Exception("User not found");
+    }
 
-// Check if user exists
-$checkStmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
-$checkStmt->bind_param("i", $userId);
-$checkStmt->execute();
-$result = $checkStmt->get_result();
-
-if ($result->num_rows === 0) {
-    echo json_encode([
-        "success" => false,
-        "message" => "User not found"
-    ]);
+    // Check if user is an admin
+    $user = $result->fetch_assoc();
+    if ($user['role'] === 'admin') {
+        throw new Exception("Cannot delete admin user");
+    }
     $checkStmt->close();
+
+    // Delete user
+    $stmt = $conn->prepare("DELETE FROM users WHERE user_id = ?");
+    $stmt->bind_param("i", $userId);
+
+    if (!$stmt->execute()) {
+        throw new Exception("Error deleting user: " . $stmt->error);
+    }
+
+    $stmt->close();
     $conn->close();
-    exit();
-}
 
-// Check if user is an admin
-$user = $result->fetch_assoc();
-if ($user['role'] === 'admin') {
-    echo json_encode([
-        "success" => false,
-        "message" => "Cannot delete admin user"
-    ]);
-    $checkStmt->close();
-    $conn->close();
-    exit();
-}
-$checkStmt->close();
-
-// Delete user
-$stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-$stmt->bind_param("i", $userId);
-
-if ($stmt->execute()) {
+    // Return success response
     echo json_encode([
         "success" => true,
         "message" => "User deleted successfully"
     ]);
-} else {
+
+} catch (Exception $e) {
+    // Log error to server log
+    error_log("Error in delete_user.php: " . $e->getMessage());
+    
+    // Return error as JSON
     echo json_encode([
         "success" => false,
-        "message" => "Error deleting user: " . $stmt->error
+        "message" => $e->getMessage()
     ]);
 }
-
-$stmt->close();
-$conn->close();
 ?>

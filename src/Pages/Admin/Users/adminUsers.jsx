@@ -35,22 +35,29 @@ function AdminUsers() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_users.php', {
-        credentials: 'include'
+      // Use the combined users.php endpoint
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/users.php', {
+        cache: 'no-cache' // Prevent caching
       });
       
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
-      const data = await response.json();
+      const text = await response.text();
       
-      if (data.success) {
-        console.log('Users loaded:', data.users);
-        setUsers(data.users || []);
-        setFilteredUsers(data.users || []);
-      } else {
-        throw new Error(data.message || 'Failed to fetch users');
+      try {
+        const data = JSON.parse(text);
+        if (data.success) {
+          console.log('Users loaded:', data.users);
+          setUsers(data.users || []);
+          setFilteredUsers(data.users || []);
+        } else {
+          throw new Error(data.message || 'Failed to fetch users');
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Raw response:', text);
+        throw new Error('Invalid response format from server');
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -116,31 +123,36 @@ function AdminUsers() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify(newUser),
       });
       
-      const data = await response.json();
+      const text = await response.text();
       
-      if (data.success) {
-        // Reset form and close modal
-        setNewUser({
-          firstname: '',
-          lastname: '',
-          email: '',
-          username: '',
-          password: '',
-          role: 'student',
-          department: ''
-        });
-        setShowAddUserModal(false);
-        
-        // Refresh users list
-        fetchUsers();
-        
-        alert('User added successfully!');
-      } else {
-        alert(`Failed to add user: ${data.message}`);
+      try {
+        const data = JSON.parse(text);
+        if (data.success) {
+          // Reset form and close modal
+          setNewUser({
+            firstname: '',
+            lastname: '',
+            email: '',
+            username: '',
+            password: '',
+            role: 'student',
+            department: ''
+          });
+          setShowAddUserModal(false);
+          
+          // Refresh users list
+          fetchUsers();
+          
+          alert('User added successfully!');
+        } else {
+          alert(`Failed to add user: ${data.message}`);
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Raw response:', text);
+        alert('Error adding user: Invalid response from server');
       }
     } catch (error) {
       console.error('Error adding user:', error);
@@ -160,18 +172,23 @@ function AdminUsers() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({ userId }),
       });
       
-      const data = await response.json();
+      const text = await response.text();
       
-      if (data.success) {
-        // Remove user from state
-        setUsers(users.filter(user => user.id !== userId));
-        alert('User deleted successfully!');
-      } else {
-        alert(`Failed to delete user: ${data.message}`);
+      try {
+        const data = JSON.parse(text);
+        if (data.success) {
+          // Remove user from state
+          setUsers(users.filter(user => user.user_id !== userId));
+          alert('User deleted successfully!');
+        } else {
+          alert(`Failed to delete user: ${data.message}`);
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Raw response:', text);
+        alert('Error deleting user: Invalid response from server');
       }
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -252,8 +269,8 @@ function AdminUsers() {
             </thead>
             <tbody>
               {filteredUsers.map(user => (
-                <tr key={user.id}>
-                  <td>{user.id}</td>
+                <tr key={user.user_id}>
+                  <td>{user.user_id}</td>
                   <td>{user.firstname} {user.lastname}</td>
                   <td>{user.username}</td>
                   <td>{user.email}</td>
@@ -268,7 +285,7 @@ function AdminUsers() {
                       {user.role !== 'admin' && (
                         <button 
                           className="delete-btn"
-                          onClick={() => handleDeleteUser(user.id)}
+                          onClick={() => handleDeleteUser(user.user_id)}
                         >
                           Delete
                         </button>

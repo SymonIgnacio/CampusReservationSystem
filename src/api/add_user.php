@@ -1,5 +1,9 @@
 <?php
-// Direct CORS headers first to ensure they're sent
+// Disable error display in response
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// Direct CORS headers first - must be before any output
 header("Access-Control-Allow-Origin: http://localhost:3000");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
@@ -12,145 +16,123 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Include session configuration
-require_once 'session_config.php';
-
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Only allow POST requests
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
-    echo json_encode([
-        "success" => false,
-        "message" => "Method not allowed"
-    ]);
-    exit();
-}
-
-// Get JSON data from request
-$data = json_decode(file_get_contents("php://input"), true);
-
-if (!$data) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Invalid JSON data"
-    ]);
-    exit();
-}
-
-// Validate required fields
-$requiredFields = ['firstname', 'lastname', 'username', 'email', 'password', 'role'];
-foreach ($requiredFields as $field) {
-    if (!isset($data[$field]) || empty($data[$field])) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Missing required field: $field"
-        ]);
-        exit();
+try {
+    // Only allow POST requests
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception("Method not allowed");
     }
-}
 
-// Connect to DB
-$host = "localhost";
-$dbname = "campus_db"; 
-$dbuser = "root";
-$dbpass = "";
+    // Get JSON data from request
+    $data = json_decode(file_get_contents("php://input"), true);
 
-$conn = new mysqli($host, $dbuser, $dbpass, $dbname);
-
-if ($conn->connect_error) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Connection failed: " . $conn->connect_error
-    ]);
-    exit();
-}
-
-// Check if users table exists
-$tableCheck = $conn->query("SHOW TABLES LIKE 'users'");
-if ($tableCheck->num_rows == 0) {
-    // Create users table
-    $createTableSQL = "CREATE TABLE users (
-        id INT(11) AUTO_INCREMENT PRIMARY KEY,
-        firstname VARCHAR(255) NOT NULL,
-        middlename VARCHAR(255),
-        lastname VARCHAR(255) NOT NULL,
-        department VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        username VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        role VARCHAR(50) DEFAULT 'student',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )";
-    
-    if (!$conn->query($createTableSQL)) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Failed to create users table: " . $conn->error
-        ]);
-        exit();
+    if (!$data) {
+        throw new Exception("Invalid JSON data");
     }
-}
 
-// Check if username or email already exists
-$checkStmt = $conn->prepare("SELECT * FROM users WHERE username = ? OR email = ?");
-$checkStmt->bind_param("ss", $data['username'], $data['email']);
-$checkStmt->execute();
-$result = $checkStmt->get_result();
+    // Validate required fields
+    $requiredFields = ['firstname', 'lastname', 'username', 'email', 'password', 'role'];
+    foreach ($requiredFields as $field) {
+        if (!isset($data[$field]) || empty($data[$field])) {
+            throw new Exception("Missing required field: $field");
+        }
+    }
 
-if ($result->num_rows > 0) {
-    $user = $result->fetch_assoc();
-    if ($user['username'] === $data['username']) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Username already exists"
-        ]);
-    } else {
-        echo json_encode([
-            "success" => false,
-            "message" => "Email already exists"
-        ]);
+    // Connect to DB
+    $host = "localhost";
+    $dbname = "campus_db"; 
+    $dbuser = "root";
+    $dbpass = "";
+
+    $conn = new mysqli($host, $dbuser, $dbpass, $dbname);
+
+    if ($conn->connect_error) {
+        throw new Exception("Connection failed: " . $conn->connect_error);
+    }
+
+    // Check if users table exists
+    $tableCheck = $conn->query("SHOW TABLES LIKE 'users'");
+    if ($tableCheck->num_rows == 0) {
+        // Create users table with the correct structure from campus_db.sql
+        $createTableSQL = "CREATE TABLE `users` (
+            `user_id` int(11) NOT NULL AUTO_INCREMENT,
+            `firstname` varchar(50) NOT NULL,
+            `middlename` varchar(50) DEFAULT NULL,
+            `lastname` varchar(50) NOT NULL,
+            `department` varchar(100) DEFAULT NULL,
+            `email` varchar(100) NOT NULL,
+            `username` varchar(50) NOT NULL,
+            `password` varchar(255) NOT NULL,
+            `role` enum('student','faculty','admin') DEFAULT 'student',
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`user_id`),
+            UNIQUE KEY `email` (`email`),
+            UNIQUE KEY `username` (`username`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+        
+        if (!$conn->query($createTableSQL)) {
+            throw new Exception("Failed to create users table: " . $conn->error);
+        }
+    }
+
+    // Check if username or email already exists
+    $checkStmt = $conn->prepare("SELECT * FROM users WHERE username = ? OR email = ?");
+    $checkStmt->bind_param("ss", $data['username'], $data['email']);
+    $checkStmt->execute();
+    $result = $checkStmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        if ($user['username'] === $data['username']) {
+            throw new Exception("Username already exists");
+        } else {
+            throw new Exception("Email already exists");
+        }
     }
     $checkStmt->close();
-    $conn->close();
-    exit();
-}
-$checkStmt->close();
 
-// Hash password
-$hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+    // Hash password
+    $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
 
-// Set default values for optional fields
-$middlename = isset($data['middlename']) ? $data['middlename'] : '';
-$department = isset($data['department']) ? $data['department'] : '';
+    // Set default values for optional fields
+    $middlename = isset($data['middlename']) ? $data['middlename'] : '';
+    $department = isset($data['department']) ? $data['department'] : '';
 
-// Insert new user
-$stmt = $conn->prepare("INSERT INTO users (firstname, middlename, lastname, department, email, username, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-$stmt->bind_param("ssssssss", 
-    $data['firstname'], 
-    $middlename, 
-    $data['lastname'], 
-    $department, 
-    $data['email'], 
-    $data['username'], 
-    $hashedPassword, 
-    $data['role']
-);
+    // Insert new user
+    $stmt = $conn->prepare("INSERT INTO users (firstname, middlename, lastname, department, email, username, password, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssssss", 
+        $data['firstname'], 
+        $middlename, 
+        $data['lastname'], 
+        $department, 
+        $data['email'], 
+        $data['username'], 
+        $hashedPassword, 
+        $data['role']
+    );
 
-if ($stmt->execute()) {
+    if (!$stmt->execute()) {
+        throw new Exception("Error adding user: " . $stmt->error);
+    }
+
     $userId = $stmt->insert_id;
+    $stmt->close();
+    $conn->close();
+
+    // Return success response
     echo json_encode([
         "success" => true,
         "message" => "User added successfully",
         "user_id" => $userId
     ]);
-} else {
+
+} catch (Exception $e) {
+    // Log error to server log
+    error_log("Error in add_user.php: " . $e->getMessage());
+    
+    // Return error as JSON
     echo json_encode([
         "success" => false,
-        "message" => "Error adding user: " . $stmt->error
+        "message" => $e->getMessage()
     ]);
 }
-
-$stmt->close();
-$conn->close();
 ?>
