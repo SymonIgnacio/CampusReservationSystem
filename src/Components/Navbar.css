@@ -1,0 +1,174 @@
+/* Navbar.css */
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    background-color: #000;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 0px 0;
+    box-sizing: border-box;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.top {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px 0px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+    min-height: 35px;
+}
+
+.logo-text {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.userProfile {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 10px 10px 15px;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    min-height: 60px;
+}
+
+.userImg {
+    margin: 0;
+    min-width: 45px;
+}
+
+.userName {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.userName p {
+    margin: 0;
+    color: #fff;
+}
+
+.user-img {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-name {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.user-role {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.nav-list {
+    list-style: none;
+    padding: 0 10px;
+    margin: 0;
+    overflow-y: auto;
+    max-height: calc(100vh - 180px);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Custom scrollbar for webkit browsers */
+.nav-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.nav-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.nav-list::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+.nav-list li {
+    position: relative;
+    margin: 5px 0;
+}
+
+.nav-list li a {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    padding: 0 15px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    margin-bottom: 5px;
+}
+
+
+
+.nav-list li a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.submenu-item {
+    margin-left: 20px !important;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Form styles for modals */
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+}
+
+.nav-list li a .bx {
+    font-size: 22px;
+    min-width: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.link-text {
+    margin-left: 15px;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+}
+
+.tooltip {
+    display: none;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 250px;
+    }
+    
+    .app-container {
+        margin-left: 250px !important;
+        width: calc(100% - 250px) !important;
+    }
+}
