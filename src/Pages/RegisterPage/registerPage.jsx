@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { auth } from "../../firebase";
 import "./registerPage.css";
 
 function RegisterPage() {
@@ -42,28 +44,50 @@ function RegisterPage() {
     }
   
     try {
-      const response = await fetch("http://localhost/CampusReservationSystem/src/api/signup.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-  
-      const data = await response.json();
-      console.log("Server Response:", data);
+      // Create Firebase user
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
       
-      if (data.success) {
-        // Registration successful
-        alert("Registration successful! You can now log in.");
-        navigate("/"); // Redirect to login page
-      } else {
-        // Registration failed
-        setError(data.message || "Registration failed. Please try again.");
+      // Send email verification
+      await sendEmailVerification(user);
+      
+      // Save user data to your database
+      try {
+        const response = await fetch("http://localhost/CampusReservationSystem/src/api/firebase_register.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...formData,
+            firebaseUid: user.uid
+          }),
+        });
+    
+        const data = await response.json();
+        
+        if (data.success) {
+          alert("Registration successful! Please check your email to verify your account before logging in.");
+          navigate("/");
+        } else {
+          setError(data.message || "Registration failed. Please try again.");
+        }
+      } catch (fetchError) {
+        // If database save fails, still show success since Firebase user was created
+        console.warn("Database save failed, but Firebase user created:", fetchError);
+        alert("Registration successful! Please check your email to verify your account before logging in.");
+        navigate("/");
       }
     } catch (error) {
       console.error("Error:", error);
-      setError("Connection error. Please try again later.");
+      if (error.code === 'auth/email-already-in-use') {
+        // Check if user just needs to verify email
+        setError("Email is already registered. If you haven't verified your email yet, please check your inbox.");
+      } else if (error.code === 'auth/weak-password') {
+        setError("Password is too weak");
+      } else {
+        setError(error.message || "Registration failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

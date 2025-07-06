@@ -130,11 +130,11 @@ function AdminTransactions({ isCollapsed }) {
                 {filteredTransactions.map((transaction, index) => (
                   <tr key={index}>
                     <td>{transaction.reference_number || 'N/A'}</td>
-                    <td>{transaction.event_name || 'N/A'}</td>
-                    <td>{`${transaction.firstname || ''} ${transaction.lastname || ''}`.trim() || transaction.requestor_name || 'N/A'}</td>
-                    <td>{transaction.resource_name || 'N/A'}</td>
-                    <td>{formatDate(transaction.start_time)}</td>
-                    <td>{formatDate(transaction.end_time)}</td>
+                    <td>{transaction.event_name || transaction.activity || 'N/A'}</td>
+                    <td>{transaction.request_by || `${transaction.firstname || ''} ${transaction.lastname || ''}`.trim() || transaction.requestor_name || 'N/A'}</td>
+                    <td>{transaction.venue || transaction.resource_name || 'N/A'}</td>
+                    <td>{formatDate(transaction.date_need_from || transaction.start_time)}</td>
+                    <td>{formatDate(transaction.date_need_until || transaction.end_time)}</td>
                     <td>
                       <span className={getStatusBadgeClass(transaction.display_status)}>
                         {transaction.display_status.toUpperCase()}

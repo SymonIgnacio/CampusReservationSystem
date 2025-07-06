@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 06, 2025 at 09:58 PM
+-- Generation Time: Jul 06, 2025 at 05:15 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -230,24 +230,25 @@ CREATE TABLE `users` (
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
   `role` enum('student','faculty','admin') DEFAULT 'student',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `firebase_uid` varchar(128) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `firstname`, `middlename`, `lastname`, `department`, `email`, `username`, `password`, `role`, `created_at`) VALUES
-(1, 'James', 'Michael', 'Solamo', NULL, 'james.solamo@uni.edu', 'j.solamo', 'hashed_pass123', 'student', '2025-05-03 18:27:54'),
-(2, 'John', 'Robert', 'Gumban', NULL, 'john.gumban@uni.edu', 'j.gumban', 'hashed_pass456', 'student', '2025-05-03 18:27:54'),
-(3, 'Genalin', 'Marie DG', 'Censon', NULL, 'genalin.censon@uni.edu', 'g.censon', 'hashed_pass789', 'faculty', '2025-05-03 18:27:54'),
-(5, 'Symon', 'Balilla', 'Ignacio', NULL, 'Symonignacio1@gmail.com', 'Symon', '$2y$10$bbVFf1Muvi/91QtsvUOOZOfRUspkiWEgHS1HaDxUJcioBhs4kvVFq', 'admin', '2025-05-03 18:59:36'),
-(7, 'James', 'Michael', 'Solamo', NULL, 'SolamoJames123@gmail.com', 'jmsolamo', '$2y$10$wtBCkoE2g2yQBRyF6fdI.uPsSGr3wvdUwvV.Q0WCj0KPWMBNuy0h6', 'student', '2025-05-04 08:41:58'),
-(8, 'Symon', 'Balilla', 'Ignacio', 'College of Computer Studies', 'Ignaciosymon11@gmail.com', 'Symie', '$2y$10$PGeB3O7g3cHFF7kKFJLjRusCOgI8mUWte4dOCt05sXKIc/bLrRE36', 'faculty', '2025-05-05 18:50:22'),
-(10, 'james', 'michael', 'solamo', 'College of Computer Studies', 'Jmsolamo@gmail.com', 'jjmsolamo', '$2y$10$3G/zPUzXhBd000CQ5Rhsrukkq/avDICbfJ1mCZNk7KV.7SgwGxkPq', 'student', '2025-05-08 14:21:33'),
-(11, 'Admin', NULL, 'User', 'IT Department', 'admin@example.com', 'admin', '$2y$10$NRXPcRocILu6NcAZiHNGguPle3iIh2KrlALZBarKT9AQ3aieaLDV6', 'admin', '2025-05-18 21:03:22'),
-(12, 'Jr', 'DC', 'Gumban', 'College of Computer Studies', 'jrguman@email.com', 'Gumban', '$2y$10$XsZiSZuVsPeFMMYWeDCNYupn9w1KacVKXaBH2LEkKSsmU5cNeTGa6', 'student', '2025-05-29 09:03:29'),
-(13, 'Anne ', 'asdjakl', 'Fortez', 'College of Accountancy', 'AnneF@email.com', 'anne', '$2y$10$xIrBuCSJ.lJKNn5TNoia4ebmJ4Dxp785CtYlEFbthG.Ec3a/FphZy', 'faculty', '2025-05-29 11:20:22');
+INSERT INTO `users` (`user_id`, `firstname`, `middlename`, `lastname`, `department`, `email`, `username`, `password`, `role`, `created_at`, `firebase_uid`) VALUES
+(1, 'James', 'Michael', 'Solamo', NULL, 'james.solamo@uni.edu', 'j.solamo', 'hashed_pass123', 'student', '2025-05-03 18:27:54', NULL),
+(2, 'John', 'Robert', 'Gumban', NULL, 'john.gumban@uni.edu', 'j.gumban', 'hashed_pass456', 'student', '2025-05-03 18:27:54', NULL),
+(3, 'Genalin', 'Marie DG', 'Censon', NULL, 'genalin.censon@uni.edu', 'g.censon', 'hashed_pass789', 'faculty', '2025-05-03 18:27:54', NULL),
+(5, 'Symon', 'Balilla', 'Ignacio', NULL, 'Symonignacio1@gmail.com', 'Symon', '$2y$10$bbVFf1Muvi/91QtsvUOOZOfRUspkiWEgHS1HaDxUJcioBhs4kvVFq', 'admin', '2025-05-03 18:59:36', NULL),
+(7, 'James', 'Michael', 'Solamo', NULL, 'SolamoJames123@gmail.com', 'jmsolamo', '$2y$10$wtBCkoE2g2yQBRyF6fdI.uPsSGr3wvdUwvV.Q0WCj0KPWMBNuy0h6', 'student', '2025-05-04 08:41:58', NULL),
+(8, 'Symon', 'Balilla', 'Ignacio', 'College of Computer Studies', 'Ignaciosymon11@gmail.com', 'Symie', '$2y$10$9ZgBGYlIQ1t.l6E1xEbq4eRvzizXjpGWmUxV.uActAauV2Dyjc4Ya', 'faculty', '2025-05-05 18:50:22', NULL),
+(10, 'james', 'michael', 'solamo', 'College of Computer Studies', 'Jmsolamo@gmail.com', 'jjmsolamo', '$2y$10$3G/zPUzXhBd000CQ5Rhsrukkq/avDICbfJ1mCZNk7KV.7SgwGxkPq', 'student', '2025-05-08 14:21:33', NULL),
+(11, 'Admin', NULL, 'User', 'IT Department', 'admin@example.com', 'admin', '$2y$10$NRXPcRocILu6NcAZiHNGguPle3iIh2KrlALZBarKT9AQ3aieaLDV6', 'admin', '2025-05-18 21:03:22', NULL),
+(12, 'Jr', 'DC', 'Gumban', 'College of Computer Studies', 'jrguman@email.com', 'Gumban', '$2y$10$XsZiSZuVsPeFMMYWeDCNYupn9w1KacVKXaBH2LEkKSsmU5cNeTGa6', 'student', '2025-05-29 09:03:29', NULL),
+(13, 'Anne ', 'asdjakl', 'Fortez', 'College of Accountancy', 'AnneF@email.com', 'anne', '$2y$10$xIrBuCSJ.lJKNn5TNoia4ebmJ4Dxp785CtYlEFbthG.Ec3a/FphZy', 'faculty', '2025-05-29 11:20:22', NULL);
 
 --
 -- Indexes for dumped tables
@@ -278,7 +279,8 @@ ALTER TABLE `request`
 ALTER TABLE `users`
   ADD PRIMARY KEY (`user_id`),
   ADD UNIQUE KEY `email` (`email`),
-  ADD UNIQUE KEY `username` (`username`);
+  ADD UNIQUE KEY `username` (`username`),
+  ADD UNIQUE KEY `firebase_uid` (`firebase_uid`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -309,3 +311,6 @@ ALTER TABLE `users`
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 COMMIT;
 
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

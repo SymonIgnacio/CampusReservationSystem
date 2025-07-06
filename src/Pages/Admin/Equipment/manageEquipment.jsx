@@ -16,11 +16,11 @@ function ManageEquipment() {
     fetchEquipment();
   }, []);
 
-  // Fetch equipment from API
+  // Fetch equipment from API with availability
   const fetchEquipment = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/CampusReservationSystem/src/api/equipment.php', {
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/equipment_availability.php', {
         credentials: 'include',
         mode: 'cors'
       });
@@ -153,7 +153,8 @@ function ManageEquipment() {
             <thead>
               <tr>
                 <th>Equipment Name</th>
-                <th>Stock</th>
+                <th>Total Stock</th>
+                <th>Available Today</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -161,7 +162,10 @@ function ManageEquipment() {
               {equipment.map(item => (
                 <tr key={item.equipment_id}>
                   <td>{item.name}</td>
-                  <td>{item.stock}</td>
+                  <td>{item.total_stock || item.quantity_available || item.stock || 0}</td>
+                  <td className={item.available_quantity < 5 ? 'low-stock' : ''}>
+                    {item.available_quantity !== undefined ? item.available_quantity : (item.quantity_available || item.stock || 0)}
+                  </td>
                   <td>
                     <div className="action-buttons">
                       <button 
@@ -170,7 +174,7 @@ function ManageEquipment() {
                           setNewEquipment({
                             id: item.equipment_id,
                             name: item.name,
-                            stock: item.stock
+                            stock: item.quantity_available || item.stock || 0
                           });
                           setShowAddModal(true);
                         }}

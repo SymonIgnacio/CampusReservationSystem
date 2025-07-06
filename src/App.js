@@ -21,7 +21,13 @@ import ManageFacilities from './Pages/Admin/Facilities/manageFacilities';
 import ManageEquipment from './Pages/Admin/Equipment/manageEquipment';
 import AddUser from './Pages/Admin/AddUser/addUser';
 import ManageUsers from './Pages/Admin/ManageUsers/manageUsers';
-import Reports from './Pages/Reports/SimpleReports';
+import AdminReports from './Pages/Admin/Reports/adminReports';
+
+// Import approver pages
+import ApproverDashboard from './Pages/Approver/Dashboard/approverDashboard';
+import ApproverEvents from './Pages/Approver/Events/approverEvents';
+import ApproverRequests from './Pages/Approver/Requests/approverRequests';
+import ApproverTransactions from './Pages/Approver/Transactions/approverTransactions';
 
 // Import client pages for viewing facilities and equipment
 import ViewFacilities from './Pages/Facilities/ViewFacilities';
@@ -38,7 +44,14 @@ const ProtectedRoute = ({ element, requiredRole }) => {
   }
   
   if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/dashboard" replace />;
+    // Redirect based on user role
+    if (user?.role === 'admin') {
+      return <Navigate to="/admin/dashboard" replace />;
+    } else if (user?.role === 'approver') {
+      return <Navigate to="/approver/dashboard" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
   
   return element;
@@ -47,8 +60,9 @@ const ProtectedRoute = ({ element, requiredRole }) => {
 function AppContent() {
   const location = useLocation();
   
-  // Check if current route is an admin route
+  // Check if current route is an admin or approver route
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isApproverRoute = location.pathname.startsWith('/approver');
   
   // Show navbar on these routes
   const clientNavbarRoutes = ['/dashboard', '/requestEvent', '/settings', '/facilities', '/equipment'];
@@ -66,13 +80,19 @@ function AppContent() {
     '/admin/manage-users',
     '/admin/reports'
   ];
+  const approverNavbarRoutes = [
+    '/approver/dashboard',
+    '/approver/events',
+    '/approver/requests',
+    '/approver/transactions'
+  ];
   
   // Determine if navbar should be shown
-  const showNavbar = clientNavbarRoutes.includes(location.pathname) || adminNavbarRoutes.includes(location.pathname);
+  const showNavbar = clientNavbarRoutes.includes(location.pathname) || adminNavbarRoutes.includes(location.pathname) || approverNavbarRoutes.includes(location.pathname);
 
   return (
     <>
-      {showNavbar && <Navbar isAdminPage={isAdminRoute} />}
+      {showNavbar && <Navbar isAdminPage={isAdminRoute} isApproverPage={isApproverRoute} />}
       
       <div className="app-container">
         <Routes>
@@ -132,7 +152,21 @@ function AppContent() {
             <ProtectedRoute element={<ManageUsers />} requiredRole="admin" />
           } />
           <Route path="/admin/reports" element={
-            <ProtectedRoute element={<Reports isAdmin={true} />} requiredRole="admin" />
+            <ProtectedRoute element={<AdminReports />} requiredRole="admin" />
+          } />
+          
+          {/* Approver routes */}
+          <Route path="/approver/dashboard" element={
+            <ProtectedRoute element={<ApproverDashboard />} requiredRole="approver" />
+          } />
+          <Route path="/approver/events" element={
+            <ProtectedRoute element={<ApproverEvents />} requiredRole="approver" />
+          } />
+          <Route path="/approver/requests" element={
+            <ProtectedRoute element={<ApproverRequests />} requiredRole="approver" />
+          } />
+          <Route path="/approver/transactions" element={
+            <ProtectedRoute element={<ApproverTransactions />} requiredRole="approver" />
           } />
         </Routes>
       </div>

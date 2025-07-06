@@ -1,4 +1,8 @@
 <?php
+// Disable error display in response
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 // Allow from any origin
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET");
@@ -43,7 +47,7 @@ try {
     $user_stmt->bindParam(':user_id', $user_id);
     $user_stmt->execute();
     $user_row = $user_stmt->fetch(PDO::FETCH_ASSOC);
-    $full_name = $user_row['full_name'];
+    $full_name = $user_row ? $user_row['full_name'] : 'Unknown User';
     
     $requests = [];
     

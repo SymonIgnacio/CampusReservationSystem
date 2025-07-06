@@ -90,7 +90,8 @@ const AdminCreateEvent = () => {
 
     const fetchEquipment = async () => {
       try {
-        const response = await fetch('http://localhost/CampusReservationSystem/src/api/equipment.php', {
+        const checkDate = formData.dateFrom || new Date().toISOString().split('T')[0];
+        const response = await fetch(`http://localhost/CampusReservationSystem/src/api/equipment_availability.php?date=${checkDate}`, {
           credentials: 'include',
           mode: 'cors'
         });
@@ -99,15 +100,15 @@ const AdminCreateEvent = () => {
         if (data.success && data.equipment) {
           // Map the equipment data for the dropdown
           const equipmentOptions = data.equipment.map(item => ({
-            id: item.id || item.equipment_id,
+            id: item.equipment_id,
             name: item.name
           }));
           setEquipment(equipmentOptions);
           
-          // Create a map of equipment ID to stock quantity
+          // Create a map of equipment ID to available quantity
           const stockMap = {};
           data.equipment.forEach(item => {
-            stockMap[item.id || item.equipment_id] = item.stock || item.quantity || 0;
+            stockMap[item.equipment_id] = item.available_quantity;
           });
           setEquipmentStock(stockMap);
         } else {
@@ -120,7 +121,7 @@ const AdminCreateEvent = () => {
 
     fetchVenues();
     fetchEquipment();
-  }, []);
+  }, [formData.dateFrom]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

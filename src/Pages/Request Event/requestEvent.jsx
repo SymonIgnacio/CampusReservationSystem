@@ -171,6 +171,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
   const [formData, setFormData] = useState({
     activity: '',
     department: '',
+    otherDepartment: '',
     venue: '',
     dateFrom: '',
     timeFrom: '',
@@ -299,7 +300,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="activity">Activity Name</label>
+          <label htmlFor="activity">Activity Name <span className="required">*</span></label>
           <input
             type="text"
             id="activity"
@@ -311,7 +312,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="department">Department</label>
+          <label htmlFor="department">Department <span className="required">*</span></label>
           <select
             id="department"
             name="department"
@@ -323,11 +324,23 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
             {departments.map((dept, index) => (
               <option key={index} value={dept}>{dept}</option>
             ))}
+            <option value="others">Others</option>
           </select>
+          {formData.department === 'others' && (
+            <input
+              type="text"
+              name="otherDepartment"
+              value={formData.otherDepartment || ''}
+              onChange={handleChange}
+              placeholder="Please specify department"
+              required
+              style={{marginTop: '10px'}}
+            />
+          )}
         </div>
 
         <div className="form-group">
-          <label htmlFor="venue">Venue</label>
+          <label htmlFor="venue">Venue <span className="required">*</span></label>
           <select
             id="venue"
             name="venue"
@@ -346,7 +359,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
 
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="dateFrom">Date From</label>
+            <label htmlFor="dateFrom">Usage Date From <span className="required">*</span></label>
             <input
               type="date"
               id="dateFrom"
@@ -358,7 +371,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="timeFrom">Time From</label>
+            <label htmlFor="timeFrom">Time From <span className="required">*</span></label>
             <input
               type="time"
               id="timeFrom"
@@ -372,7 +385,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
 
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="dateTo">Date To</label>
+            <label htmlFor="dateTo">Usage Date To <span className="required">*</span></label>
             <input
               type="date"
               id="dateTo"
@@ -384,7 +397,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="timeTo">Time To</label>
+            <label htmlFor="timeTo">Time To <span className="required">*</span></label>
             <input
               type="time"
               id="timeTo"
@@ -397,7 +410,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="attendees">Number of Attendees</label>
+          <label htmlFor="attendees">Number of Attendees <span className="required">*</span></label>
           <input
             type="number"
             id="attendees"
@@ -410,7 +423,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="purpose">Purpose</label>
+          <label htmlFor="purpose">Purpose <span className="required">*</span></label>
           <textarea
             id="purpose"
             name="purpose"

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Navbar.css';
 
-const Navbar = ({ isAdminPage = false }) => {
+const Navbar = ({ isAdminPage = false, isApproverPage = false }) => {
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const [showUsersMenu, setShowUsersMenu] = useState(false);
     const [showResourcesMenu, setShowResourcesMenu] = useState(false);
@@ -80,27 +80,8 @@ const Navbar = ({ isAdminPage = false }) => {
                             </a>
                             <span className="tooltip">Events</span>
                         </li>
-                        <li>
-                            <a href="#" onClick={handleNavigation('/admin/requests')}>
-                                <i className="bx bx-edit"></i>
-                                <span className="link-text">REQUESTS</span>
-                            </a>
-                            <span className="tooltip">Requests</span>
-                        </li>
-                        <li>
-                            <a href="#" onClick={handleNavigation('/admin/create-event')}>
-                                <i className="bx bx-calendar-plus"></i>
-                                <span className="link-text">CREATE EVENT</span>
-                            </a>
-                            <span className="tooltip">Create Event</span>
-                        </li>
-                        <li>
-                            <a href="#" onClick={handleNavigation('/admin/transactions')}>
-                                <i className="bx bx-transfer"></i>
-                                <span className="link-text">TRANSACTIONS</span>
-                            </a>
-                            <span className="tooltip">Transactions</span>
-                        </li>
+
+
                         <li>
                             <a href="#" onClick={handleNavigation('/admin/reports')}>
                                 <i className="bx bx-bar-chart-alt-2"></i>
@@ -164,6 +145,38 @@ const Navbar = ({ isAdminPage = false }) => {
                                 </li>
                             </>
                         )}
+                    </>
+                ) : isApproverPage ? (
+                    // Approver Navigation Items
+                    <>
+                        <li>
+                            <a href="#" onClick={handleNavigation('/approver/dashboard')}>
+                                <i className="bx bxs-dashboard"></i>
+                                <span className="link-text">DASHBOARD</span>
+                            </a>
+                            <span className="tooltip">Dashboard</span>
+                        </li>
+                        <li>
+                            <a href="#" onClick={handleNavigation('/approver/events')}>
+                                <i className="bx bx-calendar"></i>
+                                <span className="link-text">EVENTS</span>
+                            </a>
+                            <span className="tooltip">Events</span>
+                        </li>
+                        <li>
+                            <a href="#" onClick={handleNavigation('/approver/requests')}>
+                                <i className="bx bx-edit"></i>
+                                <span className="link-text">REQUESTS</span>
+                            </a>
+                            <span className="tooltip">Requests</span>
+                        </li>
+                        <li>
+                            <a href="#" onClick={handleNavigation('/approver/transactions')}>
+                                <i className="bx bx-transfer"></i>
+                                <span className="link-text">TRANSACTIONS</span>
+                            </a>
+                            <span className="tooltip">Transactions</span>
+                        </li>
                     </>
                 ) : (
                     // Regular User Navigation Items

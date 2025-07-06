@@ -1,11 +1,13 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../firebase";
 import { AuthContext } from "../../context/AuthContext";
 import "./loginPage.css";
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState("");
+  const [credential, setCredential] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
@@ -13,10 +15,16 @@ function LoginPage() {
 
   // If user is already logged in, redirect to appropriate dashboard
   useEffect(() => {
-    if (isAuthenticated) {
-      if (user && user.role === "admin") {
+    console.log('Login page useEffect - isAuthenticated:', isAuthenticated, 'user:', user);
+    if (isAuthenticated && user) {
+      console.log('User role in useEffect:', user.role);
+      if (user.role === "admin") {
+        console.log('Redirecting to admin dashboard from useEffect');
         navigate("/admin/dashboard");
+      } else if (user.role === "approver") {
+        navigate("/approver/dashboard");
       } else {
+        console.log('Redirecting to user dashboard from useEffect');
         navigate("/dashboard");
       }
     }
@@ -31,21 +39,50 @@ function LoginPage() {
     setLoginError("");
     
     try {
-      const result = await login({ username, password });
+      let email = credential;
+      
+      // If credential is not an email, show error
+      if (!credential.includes('@')) {
+        setLoginError("Please use your email address to login");
+        return;
+      }
+      
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Check if email is verified (skip for admin)
+      if (!user.emailVerified && user.email !== 'admin@example.com') {
+        setLoginError("Please verify your email before logging in.");
+        return;
+      }
+      
+      // Update AuthContext with Firebase user data
+      const result = await login({ firebaseUser: user });
+      
+      console.log('Login result:', result);
+      console.log('User role:', result.user?.role);
       
       if (result.success) {
-        // Check user role and redirect accordingly
-        if (result.user && result.user.role === "admin") {
+        if (result.user.role === "admin") {
+          console.log('Redirecting to admin dashboard');
           navigate("/admin/dashboard");
         } else {
+          console.log('Redirecting to user dashboard');
           navigate("/dashboard");
         }
       } else {
-        setLoginError(result.message || "Login failed. Please check your credentials.");
+        setLoginError("Login failed.");
       }
     } catch (error) {
-      setLoginError("An unexpected error occurred. Please try again.");
       console.error("Login error:", error);
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        setLoginError("Invalid credentials");
+      } else if (error.code === 'auth/too-many-requests') {
+        setLoginError("Too many failed attempts. Please try again later.");
+      } else {
+        setLoginError(error.message || "Login failed. Please try again.");
+      }
     }
   };
 
@@ -60,13 +97,13 @@ function LoginPage() {
       )}
       
       <form onSubmit={handleSubmit}>
-        <label htmlFor="username">Username:</label>
+        <label htmlFor="credential">Email:</label>
         <input
           type="text"
-          id="username"
-          name="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          id="credential"
+          name="credential"
+          value={credential}
+          onChange={(e) => setCredential(e.target.value)}
           required
         />
 
