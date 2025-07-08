@@ -14,15 +14,49 @@ const AuthProvider = ({ children }) => {
     // Check Firebase auth state
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser && (firebaseUser.emailVerified || firebaseUser.email === 'admin@example.com')) {
-                // Create user object from Firebase data
+            const skipVerificationEmails = ['admin@example.com', 'systemadmin@example.com', 'VPO@example.com', 'vpo@example.com', 'Vpo@example.com'];
+            if (firebaseUser && (firebaseUser.emailVerified || skipVerificationEmails.includes(firebaseUser.email))) {
+                // Fetch user data from database
+                try {
+                    const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_user_by_firebase_uid.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ firebase_uid: firebaseUser.uid })
+                    });
+                    const dbData = await response.json();
+                    
+                    if (dbData.success && dbData.user) {
+                        const userData = {
+                            user_id: dbData.user.user_id,
+                            username: dbData.user.username,
+                            firstname: dbData.user.firstname,
+                            lastname: dbData.user.lastname,
+                            email: dbData.user.email,
+                            department: dbData.user.department,
+                            role: dbData.user.role,
+                            firebase_uid: firebaseUser.uid
+                        };
+                        setUser(userData);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
+                }
+                
+                // Fallback for special accounts
                 const userData = {
                     user_id: firebaseUser.uid,
                     username: firebaseUser.email.split('@')[0],
-                    firstname: firebaseUser.email === 'admin@example.com' ? 'Admin' : 'User',
-                    lastname: firebaseUser.email === 'admin@example.com' ? 'User' : '',
+                    firstname: firebaseUser.email === 'admin@example.com' ? 'Admin' : 
+                              firebaseUser.email === 'systemadmin@example.com' ? 'System' : 
+                              (firebaseUser.email === 'VPO@example.com' || firebaseUser.email === 'Vpo@example.com' || firebaseUser.email === 'vpo@example.com') ? 'Vice President' : 'User',
+                    lastname: firebaseUser.email === 'admin@example.com' ? 'User' : 
+                             firebaseUser.email === 'systemadmin@example.com' ? 'Administrator' : 
+                             (firebaseUser.email === 'VPO@example.com' || firebaseUser.email === 'Vpo@example.com' || firebaseUser.email === 'vpo@example.com') ? 'Office' : '',
                     email: firebaseUser.email,
-                    role: firebaseUser.email === 'admin@example.com' ? 'admin' : 'user',
+                    role: firebaseUser.email === 'admin@example.com' ? 'admin' : 
+                          firebaseUser.email === 'systemadmin@example.com' ? 'sysadmin' : 
+                          (firebaseUser.email === 'VPO@example.com' || firebaseUser.email === 'Vpo@example.com' || firebaseUser.email === 'vpo@example.com') ? 'vpo' : 'user',
                     firebase_uid: firebaseUser.uid
                 };
                 console.log('Firebase user authenticated:', userData);
@@ -44,15 +78,49 @@ const AuthProvider = ({ children }) => {
         try {
             if (firebaseUser) {
                 console.log('Firebase user email:', firebaseUser.email);
-                console.log('Is admin check:', firebaseUser.email === 'admin@example.com');
                 
+                // Fetch user data from database
+                try {
+                    const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_user_by_firebase_uid.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ firebase_uid: firebaseUser.uid })
+                    });
+                    const dbData = await response.json();
+                    
+                    if (dbData.success && dbData.user) {
+                        const userData = {
+                            user_id: dbData.user.user_id,
+                            username: dbData.user.username,
+                            firstname: dbData.user.firstname,
+                            lastname: dbData.user.lastname,
+                            email: dbData.user.email,
+                            department: dbData.user.department,
+                            role: dbData.user.role,
+                            firebase_uid: firebaseUser.uid
+                        };
+                        console.log('FIREBASE Login successful, user data:', userData);
+                        setUser(userData);
+                        return { success: true, user: userData };
+                    }
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
+                }
+                
+                // Fallback for special accounts
                 const userData = {
                     user_id: firebaseUser.uid,
                     username: firebaseUser.email.split('@')[0],
-                    firstname: firebaseUser.email === 'admin@example.com' ? 'Admin' : 'User',
-                    lastname: firebaseUser.email === 'admin@example.com' ? 'User' : '',
+                    firstname: firebaseUser.email === 'admin@example.com' ? 'Admin' : 
+                              firebaseUser.email === 'systemadmin@example.com' ? 'System' : 
+                              (firebaseUser.email === 'VPO@example.com' || firebaseUser.email === 'Vpo@example.com' || firebaseUser.email === 'vpo@example.com') ? 'Vice President' : 'User',
+                    lastname: firebaseUser.email === 'admin@example.com' ? 'User' : 
+                             firebaseUser.email === 'systemadmin@example.com' ? 'Administrator' : 
+                             (firebaseUser.email === 'VPO@example.com' || firebaseUser.email === 'Vpo@example.com' || firebaseUser.email === 'vpo@example.com') ? 'Office' : '',
                     email: firebaseUser.email,
-                    role: firebaseUser.email === 'admin@example.com' ? 'admin' : 'user',
+                    role: firebaseUser.email === 'admin@example.com' ? 'admin' : 
+                          firebaseUser.email === 'systemadmin@example.com' ? 'sysadmin' : 
+                          (firebaseUser.email === 'VPO@example.com' || firebaseUser.email === 'Vpo@example.com' || firebaseUser.email === 'vpo@example.com') ? 'vpo' : 'user',
                     firebase_uid: firebaseUser.uid
                 };
                 console.log('FIREBASE Login successful, user data:', userData);

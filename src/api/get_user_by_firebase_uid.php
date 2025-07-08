@@ -19,26 +19,28 @@ try {
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
     
-    if (!$data || !isset($data['user_id'])) {
-        throw new Exception("Invalid data or missing user ID");
+    if (!$data || !isset($data['firebase_uid'])) {
+        throw new Exception("Firebase UID is required");
     }
     
     $conn = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_pass);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    $sql = "UPDATE users SET firstname = ?, lastname = ?, department = ? WHERE user_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute([
-        $data['firstname'],
-        $data['lastname'], 
-        $data['department'],
-        $data['user_id']
-    ]);
+    $stmt = $conn->prepare("SELECT * FROM users WHERE firebase_uid = ?");
+    $stmt->execute([$data['firebase_uid']]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    echo json_encode([
-        "success" => true,
-        "message" => "Profile updated successfully"
-    ]);
+    if ($user) {
+        echo json_encode([
+            "success" => true,
+            "user" => $user
+        ]);
+    } else {
+        echo json_encode([
+            "success" => false,
+            "message" => "User not found"
+        ]);
+    }
     
 } catch (Exception $e) {
     echo json_encode([

@@ -44,6 +44,22 @@ function RegisterPage() {
     }
   
     try {
+      // First check if email exists in local database
+      const checkResponse = await fetch("http://localhost/CampusReservationSystem/src/api/check_email.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      
+      const checkData = await checkResponse.json();
+      if (checkData.exists) {
+        setError("Email is already registered. Please use a different email or login.");
+        setLoading(false);
+        return;
+      }
+      
       // Create Firebase user
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
@@ -59,7 +75,11 @@ function RegisterPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ...formData,
+            username: formData.username,
+            email: formData.email,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            department: formData.department,
             firebaseUid: user.uid
           }),
         });
@@ -73,10 +93,10 @@ function RegisterPage() {
           setError(data.message || "Registration failed. Please try again.");
         }
       } catch (fetchError) {
-        // If database save fails, still show success since Firebase user was created
-        console.warn("Database save failed, but Firebase user created:", fetchError);
-        alert("Registration successful! Please check your email to verify your account before logging in.");
-        navigate("/");
+        console.error("Database save failed:", fetchError);
+        setError("Registration failed to save user data. Please try again.");
+        setLoading(false);
+        return;
       }
     } catch (error) {
       console.error("Error:", error);

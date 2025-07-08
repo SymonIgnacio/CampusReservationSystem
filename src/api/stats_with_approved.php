@@ -1,7 +1,5 @@
 <?php
-// Allow from any origin
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET");
+require_once 'cors_fix.php';
 header("Content-Type: application/json");
 
 // Database connection details
@@ -29,7 +27,7 @@ try {
     $pending_result = $pending_stmt->fetch(PDO::FETCH_ASSOC);
     $pending_events = $pending_result['pending'];
     
-    // Get approved events
+    // Get approved events (total count from approved_request table)
     $approved_query = "SELECT COUNT(*) as approved FROM approved_request";
     $approved_stmt = $conn->prepare($approved_query);
     $approved_stmt->execute();
@@ -43,9 +41,9 @@ try {
     $declined_result = $declined_stmt->fetch(PDO::FETCH_ASSOC);
     $declined_events = $declined_result['declined'];
     
-    // Get upcoming events (approved events with future dates)
+    // Get upcoming events (approved events with future dates only)
     $upcoming_query = "SELECT COUNT(*) as upcoming FROM approved_request 
-                      WHERE STR_TO_DATE(CONCAT(date_need_from, ' ', start_time), '%Y-%m-%d %H:%i:%s') > NOW()";
+                      WHERE date_need_from >= CURDATE()";
     $upcoming_stmt = $conn->prepare($upcoming_query);
     $upcoming_stmt->execute();
     $upcoming_result = $upcoming_stmt->fetch(PDO::FETCH_ASSOC);
@@ -85,6 +83,13 @@ try {
     // Return all stats as JSON
     echo json_encode([
         'status' => 'success',
+        'stats' => [
+            'total' => $total_events,
+            'pending' => $pending_events,
+            'approved' => $approved_events,
+            'declined' => $declined_events,
+            'upcoming' => $upcoming_events
+        ],
         'total_events' => $total_events,
         'pending_events' => $pending_events,
         'approved_events' => $approved_events,

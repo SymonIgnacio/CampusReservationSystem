@@ -1,0 +1,83 @@
+.sysadmin-container {
+  padding: 20px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.sysadmin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sysadmin-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.logout-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.logout-btn:hover {
+  background: #c82333;
+}
+
+.sysadmin-tabs {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #ddd;
+  overflow-x: auto;
+  flex-wrap: wrap;
+}
+
+.sysadmin-tabs .tab {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 120px;
+  font-size: 14px;
+}
+
+.sysadmin-tabs .tab:hover {
+  color: #333;
+  background-color: #f0f0f0;
+}
+
+.sysadmin-tabs .tab.active {
+  color: #dc3545;
+  border-bottom-color: #dc3545;
+  background-color: #fff;
+}
+
+.tab-content {
+  background: white;
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  min-height: 600px;
+}
+
+.placeholder {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+  font-size: 18px;
+  font-style: italic;
+}

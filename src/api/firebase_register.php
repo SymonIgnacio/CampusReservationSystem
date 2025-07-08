@@ -48,7 +48,7 @@ try {
     }
 
     // Insert user with Firebase UID
-    $stmt = $conn->prepare("INSERT INTO users (username, email, firstname, lastname, department, role, firebase_uid, email_verified) VALUES (?, ?, ?, ?, ?, 'user', ?, 0)");
+    $stmt = $conn->prepare("INSERT INTO users (username, email, firstname, lastname, department, role, firebase_uid) VALUES (?, ?, ?, ?, ?, 'user', ?)");
     $stmt->bind_param("ssssss", $data['username'], $data['email'], $data['firstName'], $data['lastName'], $data['department'], $data['firebaseUid']);
     
     if (!$stmt->execute()) {

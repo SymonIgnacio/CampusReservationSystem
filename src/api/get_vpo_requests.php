@@ -11,13 +11,14 @@ try {
     $conn = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_pass);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    $stmt = $conn->prepare("SELECT user_id, username, firstname, lastname, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 10");
+    // Only get requests that are pending VPO approval (approved by GSO)
+    $stmt = $conn->prepare("SELECT * FROM request WHERE status = 'pending_vpo' ORDER BY date_created DESC");
     $stmt->execute();
-    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     echo json_encode([
         "success" => true,
-        "users" => $users
+        "requests" => $requests
     ]);
     
 } catch (Exception $e) {

@@ -29,6 +29,12 @@ import ApproverEvents from './Pages/Approver/Events/approverEvents';
 import ApproverRequests from './Pages/Approver/Requests/approverRequests';
 import ApproverTransactions from './Pages/Approver/Transactions/approverTransactions';
 
+// Import sysadmin pages
+import SysAdmin from './Pages/SysAdmin/sysAdmin';
+
+// Import VPO pages
+import VPO from './Pages/VPO/vpo';
+
 // Import client pages for viewing facilities and equipment
 import ViewFacilities from './Pages/Facilities/ViewFacilities';
 import ViewEquipment from './Pages/Equipment/ViewEquipment';
@@ -49,6 +55,10 @@ const ProtectedRoute = ({ element, requiredRole }) => {
       return <Navigate to="/admin/dashboard" replace />;
     } else if (user?.role === 'approver') {
       return <Navigate to="/approver/dashboard" replace />;
+    } else if (user?.role === 'sysadmin') {
+      return <Navigate to="/sysadmin" replace />;
+    } else if (user?.role === 'vpo') {
+      return <Navigate to="/vpo" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;
     }
@@ -167,6 +177,18 @@ function AppContent() {
           } />
           <Route path="/approver/transactions" element={
             <ProtectedRoute element={<ApproverTransactions />} requiredRole="approver" />
+          } />
+          
+          {/* SysAdmin routes */}
+          <Route path="/sysadmin" element={
+            <ProtectedRoute element={<SysAdmin />} requiredRole="sysadmin" />
+          } />
+          
+
+          
+          {/* VPO routes */}
+          <Route path="/vpo" element={
+            <ProtectedRoute element={<VPO />} requiredRole="vpo" />
           } />
         </Routes>
       </div>

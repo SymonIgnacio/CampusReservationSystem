@@ -64,12 +64,17 @@ const AccountSettings = () => {
           phone: formData.phone,
           department: formData.department
         }),
-        mode: 'no-cors' // Add this to avoid CORS issues
+        credentials: 'include',
+        mode: 'cors'
       });
 
-      // With no-cors mode, we can't read the response
-      // So we'll just assume success and update the UI
-      setSuccess('Profile updated successfully!');
+      const result = await response.json();
+      
+      if (result.success) {
+        setSuccess('Profile updated successfully!');
+      } else {
+        throw new Error(result.message || 'Failed to update profile');
+      }
       
       // Update user context if available
       if (updateUser) {
@@ -114,12 +119,17 @@ const AccountSettings = () => {
           current_password: formData.currentPassword,
           new_password: formData.newPassword
         }),
-        mode: 'no-cors' // Add this to avoid CORS issues
+        credentials: 'include',
+        mode: 'cors'
       });
 
-      // With no-cors mode, we can't read the response
-      // So we'll just assume success and update the UI
-      setSuccess('Password updated successfully!');
+      const result = await response.json();
+      
+      if (result.success) {
+        setSuccess('Password updated successfully!');
+      } else {
+        throw new Error(result.message || 'Failed to update password');
+      }
       
       // Clear password fields
       setFormData(prev => ({
@@ -212,13 +222,24 @@ const AccountSettings = () => {
 
             <div className="form-group">
               <label htmlFor="department">Department</label>
-              <input
-                type="text"
+              <select
                 id="department"
                 name="department"
                 value={formData.department}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Select Department</option>
+                <option value="College of Computer Studies">College of Computer Studies</option>
+                <option value="College of Accountancy">College of Accountancy</option>
+                <option value="College of Arts And Science">College of Arts And Science</option>
+                <option value="College Of Education">College Of Education</option>
+                <option value="College of Hospitality Management and Tourism">College of Hospitality Management and Tourism</option>
+                <option value="College Of Business Administration">College Of Business Administration</option>
+                <option value="College of Health and Sciences">College of Health and Sciences</option>
+                <option value="School of Psychology">School of Psychology</option>
+                <option value="College of Maritime Education">College of Maritime Education</option>
+                <option value="School of Mechanical Engineering">School of Mechanical Engineering</option>
+              </select>
             </div>
 
             <div className="form-actions">

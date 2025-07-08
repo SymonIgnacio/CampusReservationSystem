@@ -93,9 +93,15 @@
   text-transform: uppercase;
 }
 
-.status-badge.pending {
+.status-badge.pending,
+.status-badge.pending-gso {
   background-color: #FFC107;
   color: #000;
+}
+
+.status-badge.pending-vpo {
+  background-color: #2196F3;
+  color: white;
 }
 
 .status-badge.approved {
@@ -103,7 +109,9 @@
   color: white;
 }
 
-.status-badge.declined {
+.status-badge.declined,
+.status-badge.declined-gso,
+.status-badge.declined-vpo {
   background-color: #F44336;
   color: white;
 }

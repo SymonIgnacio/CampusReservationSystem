@@ -23,6 +23,10 @@ function LoginPage() {
         navigate("/admin/dashboard");
       } else if (user.role === "approver") {
         navigate("/approver/dashboard");
+      } else if (user.role === "sysadmin") {
+        navigate("/sysadmin");
+      } else if (user.role === "vpo") {
+        navigate("/vpo");
       } else {
         console.log('Redirecting to user dashboard from useEffect');
         navigate("/dashboard");
@@ -51,8 +55,9 @@ function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Check if email is verified (skip for admin)
-      if (!user.emailVerified && user.email !== 'admin@example.com') {
+      // Check if email is verified (skip for VPO accounts)
+      const skipVerificationEmails = ['admin@example.com', 'systemadmin@example.com', 'VPO@example.com', 'vpo@example.com'];
+      if (!user.emailVerified && !skipVerificationEmails.includes(user.email)) {
         setLoginError("Please verify your email before logging in.");
         return;
       }
@@ -67,6 +72,12 @@ function LoginPage() {
         if (result.user.role === "admin") {
           console.log('Redirecting to admin dashboard');
           navigate("/admin/dashboard");
+        } else if (result.user.role === "sysadmin") {
+          console.log('Redirecting to sysadmin dashboard');
+          navigate("/sysadmin");
+        } else if (result.user.role === "vpo") {
+          console.log('Redirecting to VPO dashboard');
+          navigate("/vpo");
         } else {
           console.log('Redirecting to user dashboard');
           navigate("/dashboard");

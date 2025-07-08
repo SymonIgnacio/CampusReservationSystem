@@ -136,8 +136,8 @@
 .modal-content {
   background: white;
   border-radius: 8px;
-  max-width: 800px;
-  width: 90vw;
+  max-width: 1000px;
+  width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
@@ -256,4 +256,32 @@
   border-radius: 4px;
   margin-bottom: 20px;
   text-align: center;
+}
+
+.request-details {
+  padding: 20px;
+}
+
+.details-grid {
+  display: grid;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.details-grid > div {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.decline-reason {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+.decline-reason p {
+  margin: 5px 0 0 0;
+  font-style: italic;
 }

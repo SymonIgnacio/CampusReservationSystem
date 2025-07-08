@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AdminCreateEvent from '../CreateEvent/adminCreateEvent';
 import AdminTransactions from '../Transactions/adminTransactions';
 import AdminRequests from '../Requests/adminRequests';
+import AdminEventsCalendar from './AdminEventsCalendar';
 import './adminEvents.css';
 
 function AdminEvents({ isCollapsed }) {
@@ -15,6 +16,8 @@ function AdminEvents({ isCollapsed }) {
         return <AdminRequests />;
       case 'transactions':
         return <AdminTransactions isCollapsed={isCollapsed} />;
+      case 'calendar':
+        return <AdminEventsCalendar isCollapsed={isCollapsed} />;
       default:
         return <AdminCreateEvent />;
     }
@@ -42,6 +45,12 @@ function AdminEvents({ isCollapsed }) {
           onClick={() => setActiveTab('transactions')}
         >
           Transactions
+        </button>
+        <button 
+          className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
+          onClick={() => setActiveTab('calendar')}
+        >
+          Calendar
         </button>
       </div>
       

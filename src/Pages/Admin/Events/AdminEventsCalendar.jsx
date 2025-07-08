@@ -1,44 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { EventContext } from '../../context/EventContext';
-
+import React, { useState, useContext, useEffect } from 'react';
+import { EventContext } from '../../../context/EventContext';
 import 'boxicons/css/boxicons.min.css';
-import './clientDashboard.css';
+import './adminEvents.css';
 
 // Base API URL
 const API_BASE_URL = 'http://localhost/CampusReservationSystem/src/api';
 
-// Helper function to render icons with fallback
-const Icon = ({ iconClass }) => {
-  const [iconsLoaded, setIconsLoaded] = useState(true);
-  
-  useEffect(() => {
-    // Check if Boxicons is loaded
-    const testIcon = document.createElement('i');
-    testIcon.className = 'bx bx-menu';
-    document.body.appendChild(testIcon);
-    
-    const computedStyle = window.getComputedStyle(testIcon);
-    const isLoaded = computedStyle.fontFamily.includes('boxicons') || 
-                    computedStyle.fontFamily.includes('BoxIcons');
-    
-    document.body.removeChild(testIcon);
-    setIconsLoaded(isLoaded);
-  }, []);
-  
-  if (iconsLoaded) {
-    return <i className={`bx ${iconClass}`}></i>;
-  } else {
-    // Map to Font Awesome icons as fallback
-    const iconMap = {
-      'bx-chevron-left': 'fa-solid fa-chevron-left',
-      'bx-chevron-right': 'fa-solid fa-chevron-right',
-      'bx-search': 'fa-solid fa-magnifying-glass'
-    };
-    return <i className={iconMap[iconClass] || 'fa-solid fa-circle'}></i>;
-  }
-};
-
-function ClientDashboard({ isCollapsed }) {
+function AdminEventsCalendar({ isCollapsed }) {
   const { events, loading, error, refreshData } = useContext(EventContext);
   const [date] = useState(new Date());
   const [month, setMonth] = useState(date.getMonth());
@@ -52,6 +20,10 @@ function ClientDashboard({ isCollapsed }) {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedDayEvents, setSelectedDayEvents] = useState([]);
+  const [editMode, setEditMode] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [resources, setResources] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -60,6 +32,40 @@ function ClientDashboard({ isCollapsed }) {
 
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Refresh data when component mounts
+  useEffect(() => {
+    refreshData();
+    
+    // Fetch facilities for dropdown
+    const fetchFacilities = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/get_facilities.php`, {
+          credentials: 'include',
+          mode: 'cors'
+        });
+        const data = await response.json();
+        if (data.success) {
+          setResources(data.facilities || []);
+        } else {
+          console.error("Failed to load facilities:", data.message);
+          // Fallback to old resources endpoint
+          const fallbackResponse = await fetch(`${API_BASE_URL}/get_resources.php`, {
+            credentials: 'include',
+            mode: 'cors'
+          });
+          const fallbackData = await fallbackResponse.json();
+          if (fallbackData.success) {
+            setResources(fallbackData.resources || []);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching facilities:", error);
+      }
+    };
+    
+    fetchFacilities();
+  }, []);
 
   // Fetch approved events directly from the approved_request table
   useEffect(() => {
@@ -88,36 +94,24 @@ function ClientDashboard({ isCollapsed }) {
           setFilteredEvents(processedEvents || []);
         } else {
           console.error("Failed to load approved events:", data.message);
-          // Fallback to original calendar events endpoint
-          const fallbackResponse = await fetch(`${API_BASE_URL}/calendar_events.php`, {
-            credentials: 'include',
-            mode: 'cors'
-          });
-          const fallbackData = await fallbackResponse.json();
-          if (fallbackData.success) {
-            setFilteredEvents(fallbackData.events || []);
+          // Fallback to filtering from context
+          if (events && events.length > 0) {
+            const approvedEvents = events.filter(event => event.status === 'approved');
+            setFilteredEvents(approvedEvents);
           }
         }
       } catch (error) {
         console.error("Error fetching approved events:", error);
-        // Fallback to original calendar events endpoint
-        try {
-          const fallbackResponse = await fetch(`${API_BASE_URL}/calendar_events.php`, {
-            credentials: 'include',
-            mode: 'cors'
-          });
-          const fallbackData = await fallbackResponse.json();
-          if (fallbackData.success) {
-            setFilteredEvents(fallbackData.events || []);
-          }
-        } catch (fallbackError) {
-          console.error("Error fetching calendar events:", fallbackError);
+        // Fallback to filtering from context
+        if (events && events.length > 0) {
+          const approvedEvents = events.filter(event => event.status === 'approved');
+          setFilteredEvents(approvedEvents);
         }
       }
     };
     
     fetchApprovedRequests();
-  }, []);
+  }, [events]);
 
   const renderCalendar = () => {
     const firstDay = new Date(year, month, 1).getDay();
@@ -144,6 +138,7 @@ function ClientDashboard({ isCollapsed }) {
         year === new Date().getFullYear();
 
       // Check if there are events on this day
+      const currentDate = new Date(year, month, i);
       const hasUpcomingEvent = upcomingEvents.some(event => {
         const eventDate = getEventDate(event);
         return eventDate &&
@@ -205,8 +200,10 @@ function ClientDashboard({ isCollapsed }) {
                     eventDate.getMonth() === month && 
                     eventDate.getFullYear() === year;
                 });
-                setSelectedDayEvents(dayEvents);
-                setShowEventModal(dayEvents.length > 0);
+                if (dayEvents.length > 0) {
+                  setSelectedDayEvents(dayEvents);
+                  setShowEventModal(true);
+                }
               }
             }}
           >
@@ -245,63 +242,26 @@ function ClientDashboard({ isCollapsed }) {
     e.preventDefault();
     if (!searchTerm.trim()) {
       // Reset to only approved events
-      const fetchApprovedRequests = async () => {
-        try {
-          const response = await fetch(`${API_BASE_URL}/get_approved_requests.php`, {
-            credentials: 'include',
-            mode: 'cors'
-          });
-          const data = await response.json();
-          if (data.success) {
-            setFilteredEvents(data.events || []);
-          } else {
-            // Fallback to original calendar events endpoint
-            const fallbackResponse = await fetch(`${API_BASE_URL}/calendar_events.php`, {
-              credentials: 'include',
-              mode: 'cors'
-            });
-            const fallbackData = await fallbackResponse.json();
-            if (fallbackData.success) {
-              setFilteredEvents(fallbackData.events || []);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching approved events:", error);
-          // Try fallback
-          try {
-            const fallbackResponse = await fetch(`${API_BASE_URL}/calendar_events.php`, {
-              credentials: 'include',
-              mode: 'cors'
-            });
-            const fallbackData = await fallbackResponse.json();
-            if (fallbackData.success) {
-              setFilteredEvents(fallbackData.events || []);
-            }
-          } catch (fallbackError) {
-            console.error("Error fetching calendar events:", fallbackError);
-          }
-        }
-      };
-      
-      fetchApprovedRequests();
+      const approvedEvents = events.filter(event => event.status === 'approved');
+      setFilteredEvents(approvedEvents);
       return;
     }
 
     // Search only within approved events
-    const filtered = filteredEvents.filter(event => {
-      const title = event.activity || event.event_name || event.name || event.title || '';
-      return title.toLowerCase().includes(searchTerm.toLowerCase());
+    const filtered = events.filter(event => {
+      const title = event.activity || event.name || event.title || '';
+      return event.status === 'approved' && title.toLowerCase().includes(searchTerm.toLowerCase());
     });
     setFilteredEvents(filtered);
   };
-  
+
   const handleModalGoTo = (e) => {
     e.preventDefault();
     if (!goToMonth || !goToYear) return;
-    
+
     const month = parseInt(goToMonth) - 1;
     const year = parseInt(goToYear);
-    
+
     if (!isNaN(month) && !isNaN(year) && month >= 0 && month <= 11) {
       setMonth(month);
       setYear(year);
@@ -315,12 +275,12 @@ function ClientDashboard({ isCollapsed }) {
   const handleTextGoTo = (e) => {
     e.preventDefault();
     if (!goToDate) return;
-    
+
     const dateParts = goToDate.split('-');
     if (dateParts.length === 2) {
       const month = parseInt(dateParts[0]) - 1;
       const year = parseInt(dateParts[1]);
-      
+
       if (!isNaN(month) && !isNaN(year) && month >= 0 && month <= 11) {
         setMonth(month);
         setYear(year);
@@ -329,7 +289,7 @@ function ClientDashboard({ isCollapsed }) {
     } else if (dateParts.length === 3) {
       const month = parseInt(dateParts[0]) - 1;
       const year = parseInt(dateParts[2]);
-      
+
       if (!isNaN(month) && !isNaN(year) && month >= 0 && month <= 11) {
         setMonth(month);
         setYear(year);
@@ -429,10 +389,8 @@ function ClientDashboard({ isCollapsed }) {
   };
 
   return (
-    <div className={`dashboard-container ${isCollapsed ? 'collapsed' : ''}`}>
+    <div className={`admin-event-container`}>
       <div className="calendar-container">
-        <h1 className='client-dashboard-container'>CALENDAR</h1>
-        
         <div className="calendar-nav">
           <button onClick={() => handleNavClick("prev")} className="nav-button">
             <i className='bx bx-chevron-left'></i>
@@ -442,14 +400,17 @@ function ClientDashboard({ isCollapsed }) {
             <i className='bx bx-chevron-right'></i>
           </button>
         </div>
-        <div className='search-container'>
-          <button className='btn-goto' onClick={() => setShowGoToModal(true)}>GO TO</button>
+        <div className='search-and-go-to'>
+            <button className='btn-goto' onClick={() => setShowGoToModal(true)}>
+              <span>GO TO</span>
+            </button>
           <form onSubmit={handleSearch} className="btn-search-container">
-            <input 
-              type="text" 
-              placeholder="Search events..."
+            <input
+              type="text"
+              placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="admin-events-search-input"
             />
             <button type="submit" className='btn-search'>
               <i className="bx bx-search"></i>
@@ -475,17 +436,17 @@ function ClientDashboard({ isCollapsed }) {
         <div className="legend">
           <h4 className='dashboard-label'>LEGEND</h4>
           <div className="border">
-            <button className="upcoming"> UPCOMING EVENTS </button>
-            <button className="finished"> FINISHED EVENTS </button>
+            <button className="upcoming"> UPCOMING </button>
+            <button className="finished"> FINISHED </button>
           </div>
         </div>
         <div className="events">
           <h4 className='dashboard-label'>UPCOMING EVENTS FOR <span className='dashboard-label'>{months[month].toUpperCase()} {year}</span></h4>
           <div className="border">
             {loading ? (
-              <p className="loading">Loading events...</p>
+              <p className="loading-message">Loading events...</p>
             ) : error ? (
-              <p className="error">{error}</p>
+              <p className="error-message">{error}</p>
             ) : currentMonthUpcomingEvents.length > 0 ? (
               <ul className="event-list">
                 {currentMonthUpcomingEvents.map(event => (
@@ -494,7 +455,7 @@ function ClientDashboard({ isCollapsed }) {
                       {formatEventDate(event)}
                     </span>
                     <br />
-                    <span className="event-title">{event.name || event.title || event.activity || 'Untitled Event'}</span>
+                    <span className="event-title">{event.activity || event.event_name || event.name || 'Untitled Event'}</span>
                   </li>
                 ))}
               </ul>
@@ -502,7 +463,6 @@ function ClientDashboard({ isCollapsed }) {
               <p className="no-events">No upcoming events this month</p>
             )}
           </div>
-          
           <h4 className='dashboard-label'>FINISHED EVENTS</h4>
           <div className="border">
             {loading ? (
@@ -517,7 +477,7 @@ function ClientDashboard({ isCollapsed }) {
                       {formatEventDate(event)}
                     </span>
                     <br />
-                    <span className="event-title">{event.name || event.title || event.activity || 'Untitled Event'}</span>
+                    <span className="event-title">{event.activity || event.event_name || event.name || 'Untitled Event'}</span>
                   </li>
                 ))}
               </ul>
@@ -531,14 +491,14 @@ function ClientDashboard({ isCollapsed }) {
       {/* Go To Modal */}
       {showGoToModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="admin-events-modal-content">
             <h3 className='modal-title-page'>GO TO</h3>
             <div className="modal-input-group">
               <label>MONTH</label>
-              <input 
-                type="number" 
-                min="1" 
-                max="12" 
+              <input
+                type="number"
+                min="1"
+                max="12"
                 value={goToMonth}
                 onChange={(e) => setGoToMonth(e.target.value)}
                 placeholder="MM"
@@ -546,10 +506,10 @@ function ClientDashboard({ isCollapsed }) {
             </div>
             <div className="modal-input-group">
               <label>DAY</label>
-              <input 
-                type="number" 
-                min="1" 
-                max="31" 
+              <input
+                type="number"
+                min="1"
+                max="31"
                 value={goToDay}
                 onChange={(e) => setGoToDay(e.target.value)}
                 placeholder="DD"
@@ -557,25 +517,25 @@ function ClientDashboard({ isCollapsed }) {
             </div>
             <div className="modal-input-group">
               <label>YEAR</label>
-              <input 
-                type="number" 
-                min="2000" 
-                max="2100" 
+              <input
+                type="number"
+                min="2000"
+                max="2100"
                 value={goToYear}
                 onChange={(e) => setGoToYear(e.target.value)}
                 placeholder="YYYY"
               />
             </div>
             <div className="modal-buttons">
-              <button 
-                className="modal-ok" 
+              <button
+                className="modal-ok"
                 onClick={handleModalGoTo}
                 disabled={!goToMonth || !goToYear}
               >
                 OK
               </button>
-              <button 
-                className="modal-cancel" 
+              <button
+                className="modal-cancel"
                 onClick={() => setShowGoToModal(false)}
               >
                 CANCEL
@@ -585,10 +545,10 @@ function ClientDashboard({ isCollapsed }) {
         </div>
       )}
       
-      {/* Event Info Modal - Simplified version without edit features */}
+      {/* Event Info Modal */}
       {showEventModal && (
         <div className="modal-overlay">
-          <div className="modal-content event-info-modal">
+          <div className="admin-events-modal-content event-info-modal">
             <h3 className='modal-title-page'>EVENTS ON {months[month]} {selectedDayEvents.length > 0 && getEventDate(selectedDayEvents[0])?.getDate()}, {year}</h3>
             
             <div className="event-modal-content">
@@ -601,27 +561,216 @@ function ClientDashboard({ isCollapsed }) {
                     <p><strong>REFERENCE NO:</strong> {event.reference_number || 'N/A'}</p>
                     <p><strong>DATE CREATED:</strong> {event.approved_at || event.date_created || 'N/A'}</p>
                     <p><strong>DEPARTMENT:</strong> {event.department_organization || event.department || 'N/A'}</p>
-                    <p><strong>LOCATION:</strong> {event.venue_name || event.venue || event.place || event.location || 'N/A'}</p>
+                    <p><strong>LOCATION:</strong> {event.venue_name || event.venue || 'N/A'}</p>
                     <p><strong>DATE:</strong> {event.date_need_from ? 
                       `${new Date(event.date_need_from).toLocaleDateString()}` : 
                       (event.date ? new Date(event.date).toLocaleDateString() : 'N/A')}</p>
                     <p><strong>TIME:</strong> {formatEventTime(event)}</p>
                     <p><strong>PURPOSE:</strong> {event.purpose || 'N/A'}</p>
                     <p><strong>ORGANIZER:</strong> {event.request_by || event.requestor_name || event.organizer || 'N/A'}</p>
+                    <div className="event-action-buttons">
+                      <button 
+                        className="edit-event-btn"
+                        onClick={() => {
+                          setEditingEvent(event);
+                          setEditMode(true);
+                        }}
+                      >
+                        EDIT
+                      </button>
+                      <button 
+                        className="remove-event-btn"
+                        onClick={async () => {
+                          if (window.confirm("Are you sure you want to remove this event?")) {
+                            try {
+                              await fetch(`${API_BASE_URL}/delete_event.php`, {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ id: event.id }),
+                                mode: 'no-cors'
+                              });
+                              
+                              setSelectedDayEvents(prev => prev.filter(e => e.id !== event.id));
+                              refreshData();
+                              
+                              if (selectedDayEvents.length <= 1) {
+                                setShowEventModal(false);
+                              }
+                            } catch (error) {
+                              console.error("Error removing event:", error);
+                              alert("Error removing event. Please try again.");
+                            }
+                          }
+                        }}
+                      >
+                        REMOVE
+                      </button>
+                    </div>
                   </div>
                   {index < selectedDayEvents.length - 1 && <hr />}
                 </div>
               ))}
             </div>
             
-            <div className="modal-buttons">
-              <button
-                className="modal-ok"
-                onClick={() => setShowEventModal(false)}
-              >
-                CLOSE
-              </button>
-            </div>
+            {!editMode && (
+              <div className="modal-buttons">
+                <button
+                  className="modal-ok"
+                  onClick={() => setShowEventModal(false)}
+                >
+                  CLOSE
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Edit Event Modal */}
+      {editMode && editingEvent && (
+        <div className="modal-overlay">
+          <div className="admin-events-modal-content">
+            <h3>Edit Event</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setIsSubmitting(true);
+              
+              try {
+                const formData = {
+                  id: editingEvent.id,
+                  activity: e.target.event_name.value,
+                  purpose: e.target.purpose.value,
+                  date_need_from: e.target.start_date.value,
+                  date_need_until: e.target.end_date.value,
+                  start_time: e.target.start_time.value,
+                  end_time: e.target.end_time.value,
+                  venue: e.target.location.options[e.target.location.selectedIndex].text,
+                  venue_id: parseInt(e.target.location.value)
+                };
+                
+                await fetch(`${API_BASE_URL}/update_event.php`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(formData),
+                  mode: 'no-cors'
+                });
+                
+                refreshData();
+                setEditMode(false);
+                setEditingEvent(null);
+                setShowEventModal(false);
+                alert('Event updated successfully!');
+              } catch (error) {
+                console.error("Error updating event:", error);
+                alert("Error updating event. Please try again.");
+              } finally {
+                setIsSubmitting(false);
+              }
+            }}>
+              <div className="form-group">
+                <label>EVENT NAME:</label>
+                <input 
+                  type="text" 
+                  name="event_name" 
+                  defaultValue={editingEvent?.activity || editingEvent?.event_name || editingEvent?.name} 
+                  required 
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>PURPOSE:</label>
+                <textarea 
+                  name="purpose" 
+                  defaultValue={editingEvent?.purpose} 
+                  required
+                ></textarea>
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label>START DATE:</label>
+                  <input 
+                    type="date" 
+                    name="start_date" 
+                    defaultValue={editingEvent?.date_need_from} 
+                    required 
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>START TIME:</label>
+                  <input 
+                    type="time" 
+                    name="start_time" 
+                    defaultValue={editingEvent?.start_time} 
+                    required 
+                  />
+                </div>
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label>END DATE:</label>
+                  <input 
+                    type="date" 
+                    name="end_date" 
+                    defaultValue={editingEvent?.date_need_until} 
+                    required 
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>END TIME:</label>
+                  <input 
+                    type="time" 
+                    name="end_time" 
+                    defaultValue={editingEvent?.end_time} 
+                    required 
+                  />
+                </div>
+              </div>
+              
+              <div className="form-group">
+                <label>LOCATION:</label>
+                <select 
+                  name="location" 
+                  defaultValue={editingEvent?.venue_id || ''} 
+                  required
+                >
+                  <option value="">SELECT LOCATION</option>
+                  {resources.map(facility => (
+                    <option key={facility.id} value={facility.id}>
+                      {facility.venue || facility.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="modal-buttons">
+                <button 
+                  type="submit" 
+                  className="modal-ok" 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'SAVING...' : 'SAVE CHANGES'}
+                </button>
+                <button 
+                  type="button" 
+                  className="modal-cancel" 
+                  onClick={() => {
+                    setEditMode(false);
+                    setEditingEvent(null);
+                  }}
+                  disabled={isSubmitting}
+                >
+                  CANCEL
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -629,4 +778,4 @@ function ClientDashboard({ isCollapsed }) {
   );
 }
 
-export default ClientDashboard;
+export default AdminEventsCalendar;

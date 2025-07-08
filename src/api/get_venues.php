@@ -16,7 +16,7 @@ try {
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     // Query to get all available venues
-    $query = "SELECT * FROM facilities ORDER BY name ASC";
+    $query = "SELECT * FROM facilities ORDER BY venue ASC";
     $stmt = $conn->prepare($query);
     $stmt->execute();
     

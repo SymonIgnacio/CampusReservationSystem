@@ -98,12 +98,14 @@ try {
     // Add reference number and approved_at
     $select .= ", ar.reference_number, ar.approved_at";
     
-    // Complete query
+    // Complete query - only get future events
     $sql = $select . " FROM approved_request ar";
     
-    // Add WHERE clause to filter out multi-day requests
-    if ($hasDateNeedFrom && $hasDateNeedUntil) {
-        $sql .= " WHERE ar.date_need_from = ar.date_need_until";
+    // Add WHERE clause to filter only upcoming events
+    if ($hasDateNeedFrom) {
+        $sql .= " WHERE ar.date_need_from >= CURDATE()";
+    } else {
+        $sql .= " WHERE DATE(ar.approved_at) >= CURDATE()";
     }
     
     $sql .= " ORDER BY " . ($hasDateNeedFrom ? "ar.date_need_from" : "ar.approved_at") . " ASC";
@@ -175,3 +177,4 @@ try {
         "message" => $e->getMessage()
     ]);
 }
+?>

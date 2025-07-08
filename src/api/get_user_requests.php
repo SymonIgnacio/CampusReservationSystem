@@ -1,21 +1,11 @@
 <?php
-// Disable error display in response
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 error_reporting(E_ALL);
-
-// Allow from any origin
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET");
 header("Content-Type: application/json");
 
-// Database connection details
-$db_host = "localhost";
-$db_name = "campus_db";
-$db_user = "root";
-$db_pass = "";
-
-// Check if required parameters are provided
-if (!isset($_GET['status']) || !isset($_GET['user_id'])) {
+if (!isset($_GET['status']) || !isset($_GET['firebase_uid'])) {
     echo json_encode([
         'status' => 'error',
         'message' => 'Missing required parameters'
@@ -24,9 +14,8 @@ if (!isset($_GET['status']) || !isset($_GET['user_id'])) {
 }
 
 $status = $_GET['status'];
-$user_id = $_GET['user_id'];
+$firebase_uid = $_GET['firebase_uid'];
 
-// Validate status parameter
 $valid_statuses = ['pending', 'approved', 'declined'];
 if (!in_array($status, $valid_statuses)) {
     echo json_encode([
@@ -37,33 +26,33 @@ if (!in_array($status, $valid_statuses)) {
 }
 
 try {
-    // Connect to database
-    $conn = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_pass);
+    $conn = new PDO("mysql:host=localhost;dbname=campus_db", "root", "");
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Get user name
-    $user_query = "SELECT CONCAT(firstname, ' ', lastname) as full_name FROM users WHERE user_id = :user_id";
+    // Get user full name
+    $user_query = "SELECT CONCAT(firstname, ' ', lastname) as full_name FROM users WHERE firebase_uid = :firebase_uid";
     $user_stmt = $conn->prepare($user_query);
-    $user_stmt->bindParam(':user_id', $user_id);
+    $user_stmt->bindParam(':firebase_uid', $firebase_uid);
     $user_stmt->execute();
     $user_row = $user_stmt->fetch(PDO::FETCH_ASSOC);
     $full_name = $user_row ? $user_row['full_name'] : 'Unknown User';
     
     $requests = [];
     
-    // Query based on status
     if ($status === 'pending') {
-        // Pending requests are in the main request table
-        $query = "SELECT *, 'pending' as status FROM request 
-                 WHERE request_by = :full_name AND status = 'pending' 
+        $query = "SELECT *, status FROM request 
+                 WHERE request_by = :full_name AND status LIKE 'pending%' 
                  ORDER BY date_created DESC";
         $stmt = $conn->prepare($query);
         $stmt->bindParam(':full_name', $full_name);
         $stmt->execute();
         $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Debug log
+        error_log('User: ' . $full_name);
+        error_log('Pending requests found: ' . count($requests));
     } 
     else if ($status === 'approved') {
-        // Check if approved_request table exists
         $query = "SELECT *, 'approved' as status FROM approved_request 
                  WHERE request_by = :full_name 
                  ORDER BY date_created DESC";
@@ -73,7 +62,6 @@ try {
         $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } 
     else if ($status === 'declined') {
-        // Check if declined_request table exists
         $query = "SELECT *, 'declined' as status FROM declined_request 
                  WHERE request_by = :full_name 
                  ORDER BY date_created DESC";
@@ -91,7 +79,7 @@ try {
 } catch (PDOException $e) {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => 'Database error'
     ]);
 }
 ?>

@@ -19,24 +19,27 @@ const departments = [
 
 const AdminCreateEvent = () => {
   const { user } = useContext(AuthContext);
-  const [formData, setFormData] = useState({
-    eventName: '',
-    organizer: '',
-    department: 'Select Department',
-    purpose: '',
-    activityNature: 'curricular',
-    otherNature: '',
-    dateFrom: '',
-    dateTo: '',
-    timeStart: '',
-    timeEnd: '',
-    participants: '',
-    malePax: 0,
-    femalePax: 0,
-    totalPax: 0,
-    venue: '',
-    equipmentNeeded: [],
-    equipmentQuantities: {}
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem('adminCreateEventForm');
+    return saved ? JSON.parse(saved) : {
+      eventName: '',
+      organizer: '',
+      department: 'Select Department',
+      purpose: '',
+      activityNature: 'curricular',
+      otherNature: '',
+      dateFrom: '',
+      dateTo: '',
+      timeStart: '',
+      timeEnd: '',
+      participants: '',
+      malePax: 0,
+      femalePax: 0,
+      totalPax: 0,
+      venue: '',
+      equipmentNeeded: [],
+      equipmentQuantities: {}
+    };
   });
 
   const [venues, setVenues] = useState([]);
@@ -47,7 +50,7 @@ const AdminCreateEvent = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ type: '', text: '' });
   const [selectedEquipment, setSelectedEquipment] = useState('');
-  const [equipmentQuantity, setEquipmentQuantity] = useState(1);
+  const [equipmentQuantity, setEquipmentQuantity] = useState(0);
 
   // Generate reference number and set current date on component mount
   useEffect(() => {
@@ -126,28 +129,32 @@ const AdminCreateEvent = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     
+    let newFormData;
     if (name === 'activityNature' && value !== 'others') {
-      setFormData({
+      newFormData = {
         ...formData,
         [name]: value,
         otherNature: '' // Clear other nature if not selecting "others"
-      });
+      };
     } else if (name === 'malePax' || name === 'femalePax') {
       const newValue = parseInt(value) || 0;
       const otherField = name === 'malePax' ? 'femalePax' : 'malePax';
       const otherValue = parseInt(formData[otherField]) || 0;
       
-      setFormData({
+      newFormData = {
         ...formData,
         [name]: newValue,
         totalPax: newValue + otherValue
-      });
+      };
     } else {
-      setFormData({
+      newFormData = {
         ...formData,
         [name]: value
-      });
+      };
     }
+    
+    setFormData(newFormData);
+    localStorage.setItem('adminCreateEventForm', JSON.stringify(newFormData));
   };
 
   const addEquipment = () => {
@@ -172,28 +179,32 @@ const AdminCreateEvent = () => {
     // Check if already in the list
     if (formData.equipmentNeeded.includes(parseInt(selectedEquipment))) {
       // Update quantity only
-      setFormData({
+      const newFormData = {
         ...formData,
         equipmentQuantities: {
           ...formData.equipmentQuantities,
           [selectedEquipment]: equipmentQuantity
         }
-      });
+      };
+      setFormData(newFormData);
+      localStorage.setItem('adminCreateEventForm', JSON.stringify(newFormData));
     } else {
       // Add new equipment
-      setFormData({
+      const newFormData = {
         ...formData,
         equipmentNeeded: [...formData.equipmentNeeded, parseInt(selectedEquipment)],
         equipmentQuantities: {
           ...formData.equipmentQuantities,
           [selectedEquipment]: equipmentQuantity
         }
-      });
+      };
+      setFormData(newFormData);
+      localStorage.setItem('adminCreateEventForm', JSON.stringify(newFormData));
     }
     
     // Reset selection
     setSelectedEquipment('');
-    setEquipmentQuantity(1);
+    setEquipmentQuantity(0);
     setSubmitMessage({ type: '', text: '' });
   };
 
@@ -202,11 +213,14 @@ const AdminCreateEvent = () => {
     const newQuantities = { ...formData.equipmentQuantities };
     delete newQuantities[id];
     
-    setFormData({
+    const newFormData = {
       ...formData,
       equipmentNeeded: newEquipmentNeeded,
       equipmentQuantities: newQuantities
-    });
+    };
+    
+    setFormData(newFormData);
+    localStorage.setItem('adminCreateEventForm', JSON.stringify(newFormData));
   };
 
   const handleSubmit = async (e) => {
@@ -310,7 +324,7 @@ const AdminCreateEvent = () => {
         });
         
         // Reset form (except reference number and date)
-        setFormData({
+        const resetFormData = {
           eventName: '',
           organizer: '',
           department: 'Select Department',
@@ -328,7 +342,9 @@ const AdminCreateEvent = () => {
           venue: '',
           equipmentNeeded: [],
           equipmentQuantities: {}
-        });
+        };
+        setFormData(resetFormData);
+        localStorage.setItem('adminCreateEventForm', JSON.stringify(resetFormData));
         
         // Generate new reference number for next event
         const digits = Math.floor(100000 + Math.random() * 900000);
@@ -366,7 +382,7 @@ const AdminCreateEvent = () => {
             />
           </div>
           <div>
-            <label>DATE:</label>
+            <label>DATE OF REQUEST:</label>
             <input 
               type="date" 
               value={currentDate} 
@@ -615,8 +631,8 @@ const AdminCreateEvent = () => {
                   <input 
                     type="number" 
                     value={equipmentQuantity} 
-                    onChange={(e) => setEquipmentQuantity(parseInt(e.target.value) || 1)} 
-                    min="1" 
+                    onChange={(e) => setEquipmentQuantity(parseInt(e.target.value) || 0)} 
+                    min="0" 
                     max={selectedEquipment ? (equipmentStock[selectedEquipment] || 0) : 1}
                   />
                 </label>

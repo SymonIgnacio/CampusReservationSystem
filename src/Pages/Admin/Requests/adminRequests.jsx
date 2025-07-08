@@ -18,8 +18,7 @@ function AdminRequests() {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_requests.php', {
-        credentials: 'include',
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_vpo_requests.php', {
         mode: 'cors'
       });
       const data = await response.json();
@@ -139,12 +138,10 @@ function AdminRequests() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         mode: 'cors',
         body: JSON.stringify({ 
-          id: requestToDecline.id, 
-          reason: declineReason,
-          rejectedBy: 'Admin' // This could be replaced with actual admin name from session
+          request_id: requestToDecline.id, 
+          decline_reason: declineReason
         }),
       });
       
@@ -199,6 +196,7 @@ function AdminRequests() {
                 <th>Time</th>
                 <th>Requested By</th>
                 <th>Details</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -225,14 +223,24 @@ function AdminRequests() {
                     </div>
                   </td>
                   <td>
-                    {request.status === 'pending' && (
+                    <span className={`status-badge ${request.status.replace('_', '-')}`}>
+                      {request.status === 'pending_gso' ? 'Pending (GSO)' :
+                       request.status === 'pending_vpo' ? 'Pending (VPO)' :
+                       request.status === 'declined_gso' ? 'Declined by GSO' :
+                       request.status === 'declined_vpo' ? 'Declined by VPO' :
+                       request.status.toUpperCase()}
+                    </span>
+                  </td>
+                  <td>
+                    {(request.status === 'pending_gso' || request.status === 'pending_vpo') && (
                       <div className="action-buttons">
                         <button 
                           className="approve-btn"
                           onClick={() => openApproveModal(request.id)}
                           disabled={processingId === request.id}
                         >
-                          {processingId === request.id ? 'Processing...' : 'Approve'}
+                          {processingId === request.id ? 'Processing...' : 
+                           (request.status === 'pending_gso' ? 'GSO Approve' : 'VPO Approve')}
                         </button>
                         <button 
                           className="decline-btn"

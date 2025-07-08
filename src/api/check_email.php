@@ -19,31 +19,25 @@ try {
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
     
-    if (!$data || !isset($data['user_id'])) {
-        throw new Exception("Invalid data or missing user ID");
+    if (!$data || !isset($data['email'])) {
+        throw new Exception("Email is required");
     }
     
     $conn = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_pass);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    $sql = "UPDATE users SET firstname = ?, lastname = ?, department = ? WHERE user_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute([
-        $data['firstname'],
-        $data['lastname'], 
-        $data['department'],
-        $data['user_id']
-    ]);
+    $stmt = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
+    $stmt->execute([$data['email']]);
+    $user = $stmt->fetch();
     
     echo json_encode([
-        "success" => true,
-        "message" => "Profile updated successfully"
+        "exists" => $user ? true : false
     ]);
     
 } catch (Exception $e) {
     echo json_encode([
-        "success" => false,
-        "message" => $e->getMessage()
+        "exists" => false,
+        "error" => $e->getMessage()
     ]);
 }
 ?>

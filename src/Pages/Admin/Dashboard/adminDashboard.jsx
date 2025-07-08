@@ -44,6 +44,7 @@ function AdminDashboard({ isCollapsed }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('asc');
+  const [selectedMonth, setSelectedMonth] = useState('');
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -52,6 +53,7 @@ function AdminDashboard({ isCollapsed }) {
   });
   const [pendingCount, setPendingCount] = useState(0);
   const [declinedCount, setDeclinedCount] = useState(0);
+  const [finishedCount, setFinishedCount] = useState(0);
 
   // Fetch approved events and stats when component mounts
   useEffect(() => {
@@ -80,8 +82,15 @@ function AdminDashboard({ isCollapsed }) {
           mode: 'cors'
         });
         const data = await response.json();
-        if (data.success) {
-          setStats(data.stats);
+        if (data.success || data.status === 'success') {
+          // Handle both response formats
+          const statsData = data.stats || {
+            approved: data.approved_events || 0,
+            pending: data.pending_events || 0,
+            declined: data.declined_events || 0,
+            total: data.total_events || 0
+          };
+          setStats(statsData);
         }
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -118,10 +127,26 @@ function AdminDashboard({ isCollapsed }) {
       }
     };
     
+    const fetchFinishedCount = async () => {
+      try {
+        const response = await fetch("http://localhost/CampusReservationSystem/src/api/get_finished_count.php", {
+          credentials: 'include',
+          mode: 'cors'
+        });
+        const data = await response.json();
+        if (data.success) {
+          setFinishedCount(data.finished_count);
+        }
+      } catch (error) {
+        console.error("Error fetching finished count:", error);
+      }
+    };
+    
     fetchApprovedEvents();
     fetchStats();
     fetchPendingCount();
     fetchDeclinedCount();
+    fetchFinishedCount();
   }, []);
 
   // Helper function to get field value with fallbacks
@@ -147,20 +172,33 @@ function AdminDashboard({ isCollapsed }) {
     }
   };
 
-  // Filter events based on search term
+  // Filter events based on search term and month
   const searchedEvents = events.filter(event => {
-    if (searchTerm === '') return true;
+    // Search filter
+    if (searchTerm !== '') {
+      const eventName = getFieldValue(event, ['activity', 'name', 'title', 'event_name']).toLowerCase();
+      const eventDate = getFieldValue(event, ['date', 'date_need_from']).toLowerCase();
+      const eventTime = getFieldValue(event, ['time', 'start_time']).toLowerCase();
+      const eventLocation = getFieldValue(event, ['venue', 'location', 'place']).toLowerCase();
+      
+      const search = searchTerm.toLowerCase();
+      if (!(eventName.includes(search) || eventDate.includes(search) || eventTime.includes(search) || eventLocation.includes(search))) {
+        return false;
+      }
+    }
     
-    const eventName = getFieldValue(event, ['activity', 'name', 'title', 'event_name']).toLowerCase();
-    const eventDate = getFieldValue(event, ['date', 'date_need_from']).toLowerCase();
-    const eventTime = getFieldValue(event, ['time', 'start_time']).toLowerCase();
-    const eventLocation = getFieldValue(event, ['venue', 'location', 'place']).toLowerCase();
+    // Month filter
+    if (selectedMonth !== '') {
+      const eventDate = getFieldValue(event, ['date', 'date_need_from']);
+      if (eventDate && eventDate !== 'N/A') {
+        const eventMonth = new Date(eventDate).getMonth() + 1;
+        if (eventMonth.toString() !== selectedMonth) {
+          return false;
+        }
+      }
+    }
     
-    const search = searchTerm.toLowerCase();
-    return eventName.includes(search) || 
-           eventDate.includes(search) || 
-           eventTime.includes(search) || 
-           eventLocation.includes(search);
+    return true;
   });
 
   // Sort events based on current sort criteria
@@ -215,8 +253,12 @@ function AdminDashboard({ isCollapsed }) {
             <p>DECLINED</p>
           </div>
           <div className="card green">
-            <h2>{stats.approved}</h2>
+            <h2>{stats.approved || 0}</h2>
             <p>APPROVED</p>
+          </div>
+          <div className="card purple">
+            <h2>{finishedCount}</h2>
+            <p>FINISHED EVENTS</p>
           </div>
         </div>
 
@@ -238,6 +280,25 @@ function AdminDashboard({ isCollapsed }) {
               </div>
             </div>
             <div className="filter-controls">
+              <select 
+                value={selectedMonth} 
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="month-filter"
+              >
+                <option value="">All Months</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
               <button 
                 className="refresh-button" 
                 onClick={() => {
@@ -265,8 +326,14 @@ function AdminDashboard({ isCollapsed }) {
                         mode: 'cors'
                       });
                       const data = await response.json();
-                      if (data.success) {
-                        setStats(data.stats);
+                      if (data.success || data.status === 'success') {
+                        const statsData = data.stats || {
+                          approved: data.approved_events || 0,
+                          pending: data.pending_events || 0,
+                          declined: data.declined_events || 0,
+                          total: data.total_events || 0
+                        };
+                        setStats(statsData);
                       }
                     } catch (error) {
                       console.error("Error fetching stats:", error);
@@ -303,10 +370,26 @@ function AdminDashboard({ isCollapsed }) {
                     }
                   };
                   
+                  const fetchFinishedCount = async () => {
+                    try {
+                      const response = await fetch("http://localhost/CampusReservationSystem/src/api/get_finished_count.php", {
+                        credentials: 'include',
+                        mode: 'cors'
+                      });
+                      const data = await response.json();
+                      if (data.success) {
+                        setFinishedCount(data.finished_count);
+                      }
+                    } catch (error) {
+                      console.error("Error fetching finished count:", error);
+                    }
+                  };
+                  
                   fetchApprovedEvents();
                   fetchStats();
                   fetchPendingCount();
                   fetchDeclinedCount();
+                  fetchFinishedCount();
                 }}
                 disabled={loading}
               >
