@@ -31,3 +31,9 @@ php_errors.log
 
 # Local environment
 .env
+# Amazon Q specific
+.amazon-q/
+.amazon-q-cache/
+.amazon-q-logs/
+.amazon-q-config.json
+.amazon-q-credentials
