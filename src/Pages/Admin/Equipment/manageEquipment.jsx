@@ -20,10 +20,7 @@ function ManageEquipment() {
   const fetchEquipment = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/CampusReservationSystem/src/api/equipment_availability.php', {
-        credentials: 'include',
-        mode: 'cors'
-      });
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/equipment_availability.php');
       
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -68,7 +65,6 @@ function ManageEquipment() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         mode: 'cors',
         body: JSON.stringify(newEquipment),
       });
@@ -108,7 +104,6 @@ function ManageEquipment() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         mode: 'cors',
         body: JSON.stringify({ equipmentId }),
       });
@@ -162,9 +157,9 @@ function ManageEquipment() {
               {equipment.map(item => (
                 <tr key={item.equipment_id}>
                   <td>{item.name}</td>
-                  <td>{item.total_stock || item.quantity_available || item.stock || 0}</td>
-                  <td className={item.available_quantity < 5 ? 'low-stock' : ''}>
-                    {item.available_quantity !== undefined ? item.available_quantity : (item.quantity_available || item.stock || 0)}
+                  <td>{item.total_stock || item.quantity_available || 0}</td>
+                  <td className={(item.available_quantity || item.quantity_available || 0) < 5 ? 'low-stock' : ''}>
+                    {item.available_quantity || item.quantity_available || 0}
                   </td>
                   <td>
                     <div className="action-buttons">
@@ -174,7 +169,7 @@ function ManageEquipment() {
                           setNewEquipment({
                             id: item.equipment_id,
                             name: item.name,
-                            stock: item.quantity_available || item.stock || 0
+                            stock: item.total_stock || item.quantity_available || 0
                           });
                           setShowAddModal(true);
                         }}

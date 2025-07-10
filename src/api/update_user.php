@@ -1,45 +1,46 @@
 <?php
-header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
     exit();
 }
 
-$db_host = "localhost";
-$db_name = "campus_db";
-$db_user = "root";
-$db_pass = "";
+$data = json_decode(file_get_contents('php://input'), true);
+
+if (!$data || !isset($data['user_id'])) {
+    echo json_encode(["success" => false, "message" => "Missing user ID"]);
+    exit();
+}
 
 try {
-    $json = file_get_contents('php://input');
-    $data = json_decode($json, true);
+    $conn = new mysqli("localhost", "root", "", "campus_db");
     
-    if (!$data || !isset($data['user_id'])) {
-        throw new Exception("Invalid data or missing user ID");
+    if ($conn->connect_error) {
+        throw new Exception("Connection failed: " . $conn->connect_error);
     }
     
-    $conn = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_pass);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    $sql = "UPDATE users SET firstname = ?, lastname = ?, department = ? WHERE user_id = ?";
+    $sql = "UPDATE users SET username = ?, email = ?, role = ? WHERE user_id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->execute([
-        $data['firstname'],
-        $data['lastname'], 
-        $data['department'],
+    $stmt->bind_param("sssi", 
+        $data['username'], 
+        $data['email'], 
+        $data['role'], 
         $data['user_id']
-    ]);
+    );
     
-    echo json_encode([
-        "success" => true,
-        "message" => "Profile updated successfully"
-    ]);
+    if ($stmt->execute()) {
+        echo json_encode([
+            "success" => true,
+            "message" => "User updated successfully"
+        ]);
+    } else {
+        throw new Exception("Failed to update user: " . $stmt->error);
+    }
     
+    $conn->close();
 } catch (Exception $e) {
     echo json_encode([
         "success" => false,

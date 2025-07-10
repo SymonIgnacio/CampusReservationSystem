@@ -52,22 +52,36 @@ const UserManagement = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingUser) {
-      setUsers(users.map(user => 
-        user.id === editingUser.id 
-          ? { ...user, ...formData, id: editingUser.id }
-          : user
-      ));
-    } else {
-      setUsers([...users, { 
-        ...formData, 
-        id: Date.now(),
-        lastLogin: 'Never'
-      }]);
+    
+    try {
+      if (editingUser) {
+        const response = await fetch('http://localhost/CampusReservationSystem/src/api/update_user.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: editingUser.user_id,
+            username: formData.username,
+            email: formData.email,
+            role: formData.role
+          })
+        });
+        const result = await response.json();
+        if (result.success) {
+          fetchUsers();
+          alert('User updated successfully!');
+        } else {
+          alert('Failed to update user: ' + result.message);
+        }
+      } else {
+        alert('Adding new users is not implemented yet.');
+      }
+      resetForm();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred');
     }
-    resetForm();
   };
 
   const resetForm = () => {
@@ -94,13 +108,25 @@ const UserManagement = () => {
     setShowModal(true);
   };
 
-  const handleDeactivate = (userId) => {
-    if (window.confirm('Are you sure you want to deactivate this user?')) {
-      setUsers(users.map(user => 
-        user.id === userId 
-          ? { ...user, status: user.status === 'Active' ? 'Inactive' : 'Active' }
-          : user
-      ));
+  const handleDelete = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        const response = await fetch('http://localhost/CampusReservationSystem/src/api/delete_user.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId })
+        });
+        const result = await response.json();
+        if (result.success) {
+          fetchUsers();
+          alert('User deleted successfully!');
+        } else {
+          alert('Failed to delete user: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+      }
     }
   };
 
@@ -136,20 +162,20 @@ const UserManagement = () => {
           </thead>
           <tbody>
             {users.map(user => (
-              <tr key={user.id}>
+              <tr key={user.user_id || user.id}>
                 <td>{user.username}</td>
                 <td>{user.email}</td>
                 <td>
-                  <span className={`role-badge ${user.role.toLowerCase()}`}>
-                    {user.role}
+                  <span className={`role-badge ${(user.role || 'student').toLowerCase()}`}>
+                    {(user.role || 'student').toUpperCase()}
                   </span>
                 </td>
                 <td>
-                  <span className={`status-badge ${user.status.toLowerCase()}`}>
-                    {user.status}
+                  <span className={`status-badge ${(user.status || 'active').toLowerCase()}`}>
+                    {user.status || 'Active'}
                   </span>
                 </td>
-                <td>{user.lastLogin}</td>
+                <td>{new Date(user.created_at).toLocaleDateString() || 'N/A'}</td>
                 <td>
                   <div className="action-buttons">
                     <button 
@@ -160,15 +186,15 @@ const UserManagement = () => {
                     </button>
                     <button 
                       className="reset-btn"
-                      onClick={() => handleResetPassword(user.id)}
+                      onClick={() => handleResetPassword(user.user_id || user.id)}
                     >
                       Reset Password
                     </button>
                     <button 
-                      className={`toggle-btn ${user.status === 'Active' ? 'deactivate' : 'activate'}`}
-                      onClick={() => handleDeactivate(user.id)}
+                      className="delete-btn"
+                      onClick={() => handleDelete(user.user_id || user.id)}
                     >
-                      {user.status === 'Active' ? 'Deactivate' : 'Activate'}
+                      Delete
                     </button>
                   </div>
                 </td>
