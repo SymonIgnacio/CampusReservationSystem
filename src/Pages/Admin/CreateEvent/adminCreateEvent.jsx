@@ -235,8 +235,6 @@ const AdminCreateEvent = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        mode: 'cors',
         body: JSON.stringify({
           venue: formData.venue,
           dateFrom: formData.dateFrom,
@@ -250,12 +248,15 @@ const AdminCreateEvent = () => {
       
       if (!availabilityResult.available) {
         // Venue is not available, show conflicts
-        const conflicts = availabilityResult.conflicts;
-        let conflictMessage = 'The venue is already booked for the following dates/times:\n\n';
+        const conflicts = availabilityResult.conflicts || [];
+        let conflictMessage = 'The venue is already booked for the selected dates/times.';
         
-        conflicts.forEach(conflict => {
-          conflictMessage += `- ${conflict.date} at ${conflict.time} by ${conflict.department} (${conflict.activity})\n`;
-        });
+        if (conflicts.length > 0) {
+          conflictMessage = 'The venue is already booked for the following dates/times:\n\n';
+          conflicts.forEach(conflict => {
+            conflictMessage += `- ${conflict.date} at ${conflict.time} by ${conflict.department} (${conflict.activity})\n`;
+          });
+        }
         
         setSubmitMessage({ 
           type: 'error', 
@@ -296,8 +297,6 @@ const AdminCreateEvent = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        mode: 'cors',
         body: JSON.stringify(eventData),
       });
       
