@@ -47,10 +47,10 @@ const AuthProvider = ({ children }) => {
                 const userData = {
                     user_id: firebaseUser.uid,
                     username: firebaseUser.email.split('@')[0],
-                    firstname: firebaseUser.email === 'admin@example.com' ? 'Admin' : 
+                    firstname: firebaseUser.email === 'admin@example.com' ? 'GSO' : 
                               firebaseUser.email === 'systemadmin@example.com' ? 'System' : 
                               (firebaseUser.email === 'VPO@example.com' || firebaseUser.email === 'Vpo@example.com' || firebaseUser.email === 'vpo@example.com') ? 'Vice President' : 'User',
-                    lastname: firebaseUser.email === 'admin@example.com' ? 'User' : 
+                    lastname: firebaseUser.email === 'admin@example.com' ? 'Director' : 
                              firebaseUser.email === 'systemadmin@example.com' ? 'Administrator' : 
                              (firebaseUser.email === 'VPO@example.com' || firebaseUser.email === 'Vpo@example.com' || firebaseUser.email === 'vpo@example.com') ? 'Office' : '',
                     email: firebaseUser.email,

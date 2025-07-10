@@ -110,12 +110,10 @@ const RequestEvent = () => {
                   <tr 
                     key={index} 
                     onClick={() => {
-                      if (activeTab === 'declined') {
-                        setSelectedRequest(request);
-                        setShowDetailsModal(true);
-                      }
+                      setSelectedRequest(request);
+                      setShowDetailsModal(true);
                     }}
-                    style={activeTab === 'declined' ? {cursor: 'pointer'} : {}}
+                    style={{cursor: 'pointer'}}
                   >
                     <td>{request.reference_number}</td>
                     <td>{request.activity}</td>
@@ -172,15 +170,18 @@ const RequestEvent = () => {
                 <div><strong>Activity:</strong> {selectedRequest.activity}</div>
                 <div><strong>Department:</strong> {selectedRequest.department_organization}</div>
                 <div><strong>Purpose:</strong> {selectedRequest.purpose}</div>
+                <div><strong>Nature:</strong> {selectedRequest.nature_of_activity}</div>
                 <div><strong>Date From:</strong> {selectedRequest.date_need_from}</div>
                 <div><strong>Date Until:</strong> {selectedRequest.date_need_until}</div>
                 <div><strong>Time:</strong> {selectedRequest.start_time} - {selectedRequest.end_time}</div>
                 <div><strong>Venue:</strong> {selectedRequest.venue}</div>
-                <div><strong>Participants:</strong> {selectedRequest.participants}</div>
-                <div><strong>Male Attendees:</strong> {selectedRequest.total_male_attendees}</div>
-                <div><strong>Female Attendees:</strong> {selectedRequest.total_female_attendees}</div>
-                <div><strong>Total Attendees:</strong> {selectedRequest.total_attendees}</div>
+                <div><strong>Participants:</strong> {selectedRequest.participants || 'Not specified'}</div>
+                <div><strong>Male Attendees:</strong> {selectedRequest.total_male_attendees || 0}</div>
+                <div><strong>Female Attendees:</strong> {selectedRequest.total_female_attendees || 0}</div>
+                <div><strong>Total Attendees:</strong> {selectedRequest.total_attendees || 0}</div>
                 <div><strong>Equipment:</strong> {selectedRequest.equipments_needed || 'None'}</div>
+                <div><strong>Status:</strong> {selectedRequest.status || 'Pending'}</div>
+                <div><strong>Date Created:</strong> {selectedRequest.date_created}</div>
                 {selectedRequest.reason && (
                   <div className="decline-reason">
                     <strong>Reason for Decline:</strong>
@@ -228,6 +229,8 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
   const [success, setSuccess] = useState(null);
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [equipmentQuantity, setEquipmentQuantity] = useState(0);
+  const [bookedDates, setBookedDates] = useState([]);
+  const [conflictDates, setConflictDates] = useState([]);
 
   const departments = [
     'Select Department',
@@ -302,7 +305,90 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
 
     fetchVenues();
     fetchEquipment();
-  }, [formData.dateFrom]);
+    if (formData.venue) {
+      checkVenueAvailability();
+    }
+    if (formData.dateFrom) {
+      checkEquipmentAvailability();
+    }
+  }, [formData.dateFrom, formData.dateTo, formData.venue, formData.equipmentNeeded]);
+
+  const checkVenueAvailability = async () => {
+    if (!formData.venue) {
+      setConflictDates([]);
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/check_venue_conflict.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          venue: formData.venue,
+          date_from: formData.dateFrom || '1900-01-01',
+          date_to: formData.dateTo || '2100-12-31'
+        }),
+      });
+      
+      const conflictResult = await response.json();
+      
+      if (conflictResult.has_conflict && conflictResult.conflicts) {
+        const conflicts = [];
+        
+        conflictResult.conflicts.forEach(booking => {
+          const bookingStart = booking.date_need_from;
+          const bookingEnd = booking.date_need_until;
+          
+          // Add all conflicting dates
+          if (formData.dateFrom && formData.dateFrom >= bookingStart && formData.dateFrom <= bookingEnd) {
+            conflicts.push(formData.dateFrom);
+          }
+          if (formData.dateTo && formData.dateTo >= bookingStart && formData.dateTo <= bookingEnd) {
+            conflicts.push(formData.dateTo);
+          }
+        });
+        
+        setConflictDates([...new Set(conflicts)]);
+      } else {
+        setConflictDates([]);
+      }
+    } catch (error) {
+      console.error('Error checking venue availability:', error);
+      setConflictDates([]);
+    }
+  };
+
+  const checkEquipmentAvailability = async () => {
+    if (!formData.dateFrom || formData.equipmentNeeded.length === 0) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/equipment_availability.php?date=${formData.dateFrom}`);
+      const data = await response.json();
+      
+      if (data.success && data.equipment) {
+        const stockMap = {};
+        data.equipment.forEach(item => {
+          stockMap[item.equipment_id] = item.available_quantity;
+        });
+        setEquipmentStock(stockMap);
+        
+        // Check if selected equipment is still available
+        const unavailableEquipment = formData.equipmentNeeded.filter(eqId => {
+          const requestedQty = formData.equipmentQuantities[eqId] || 0;
+          const availableQty = stockMap[eqId] || 0;
+          return requestedQty > availableQty;
+        });
+        
+        if (unavailableEquipment.length > 0) {
+          setError('Some selected equipment is no longer available for the chosen date.');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking equipment availability:', error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -389,30 +475,60 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check for conflicts before submitting
+    if (conflictDates.length > 0) {
+      setError('Cannot submit request. The selected venue is already booked on the chosen dates.');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     setSuccess(null);
     
     try {
+      // Double-check with server-side validation
+      const conflictCheck = await fetch(`${API_BASE_URL}/check_venue_conflict.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          venue: formData.venue,
+          date_from: formData.dateFrom,
+          date_to: formData.dateTo
+        }),
+      });
+      
+      const conflictResult = await conflictCheck.json();
+      if (conflictResult.has_conflict) {
+        setError('Cannot submit request. The venue is already booked for the selected dates.');
+        setLoading(false);
+        return;
+      }
       const eventData = {
         activity: formData.eventName,
         purpose: formData.purpose,
-        date_need_from: `${formData.dateFrom} ${formData.timeStart}`,
-        date_need_until: `${formData.dateTo} ${formData.timeEnd}`,
+        date_need_from: formData.dateFrom,
+        date_need_until: formData.dateTo,
+        start_time: formData.timeStart,
+        end_time: formData.timeEnd,
         venue: formData.venue,
         department: formData.department,
         participants: formData.participants,
-        malePax: formData.malePax,
-        femalePax: formData.femalePax,
+        total_male_attendees: formData.malePax,
+        total_female_attendees: formData.femalePax,
         activityNature: formData.activityNature,
         firebase_uid: user.firebase_uid,
         equipment: formData.equipmentNeeded.length > 0 ? formData.equipmentNeeded.map(eqId => {
-          const eq = equipment.find(e => e.id === eqId);
-          return eq ? `${eq.name} (${formData.equipmentQuantities[eqId]})` : '';
+          const eq = equipment.find(e => e.id.toString() === eqId.toString());
+          const quantity = formData.equipmentQuantities[eqId] || 0;
+          return eq ? `${eq.name} (${quantity})` : '';
         }).filter(item => item).join(', ') : ''
       };
       
       console.log('Sending data:', eventData);
+      console.log('User firebase_uid:', user.firebase_uid);
       
       const response = await fetch(`${API_BASE_URL}/create_request.php`, {
         method: 'POST',
@@ -424,6 +540,8 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
       
       const responseText = await response.text();
       console.log('Raw response:', responseText);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
       
       if (responseText.includes('<')) {
         console.error('HTML Response:', responseText);
@@ -603,8 +721,25 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
                   name="dateFrom" 
                   value={formData.dateFrom} 
                   onChange={handleChange} 
+                  min={new Date().toISOString().split('T')[0]}
+                  disabled={!formData.venue}
+                  style={{
+                    backgroundColor: conflictDates.includes(formData.dateFrom) ? '#ffebee' : (!formData.venue ? '#f5f5f5' : ''),
+                    borderColor: conflictDates.includes(formData.dateFrom) ? '#f44336' : '',
+                    cursor: !formData.venue ? 'not-allowed' : 'pointer'
+                  }}
                   required 
                 />
+                {!formData.venue && (
+                  <span style={{color: '#666', fontSize: '12px', display: 'block'}}>
+                    Please select a venue first
+                  </span>
+                )}
+                {conflictDates.includes(formData.dateFrom) && (
+                  <span style={{color: '#f44336', fontSize: '12px', display: 'block'}}>
+                    This date is already booked for {formData.venue}
+                  </span>
+                )}
               </label>
               <label>TO: 
                 <input 
@@ -612,8 +747,25 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
                   name="dateTo" 
                   value={formData.dateTo} 
                   onChange={handleChange} 
+                  min={formData.dateFrom || new Date().toISOString().split('T')[0]}
+                  disabled={!formData.venue || !formData.dateFrom}
+                  style={{
+                    backgroundColor: conflictDates.includes(formData.dateTo) ? '#ffebee' : (!formData.venue || !formData.dateFrom ? '#f5f5f5' : ''),
+                    borderColor: conflictDates.includes(formData.dateTo) ? '#f44336' : '',
+                    cursor: (!formData.venue || !formData.dateFrom) ? 'not-allowed' : 'pointer'
+                  }}
                   required 
                 />
+                {(!formData.venue || !formData.dateFrom) && (
+                  <span style={{color: '#666', fontSize: '12px', display: 'block'}}>
+                    {!formData.venue ? 'Please select a venue first' : 'Please select FROM date first'}
+                  </span>
+                )}
+                {conflictDates.includes(formData.dateTo) && (
+                  <span style={{color: '#f44336', fontSize: '12px', display: 'block'}}>
+                    This date is already booked for {formData.venue}
+                  </span>
+                )}
               </label>
             </div>
           </div>
@@ -755,10 +907,11 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
                 <h4>Selected Equipment:</h4>
                 <ul>
                   {formData.equipmentNeeded.map(eqId => {
-                    const eq = equipment.find(e => e.id === eqId);
+                    const eq = equipment.find(e => e.id.toString() === eqId.toString());
+                    const quantity = formData.equipmentQuantities[eqId] || 0;
                     return (
                       <li key={eqId}>
-                        {eq?.name} - {formData.equipmentQuantities[eqId]} pcs
+                        {eq?.name || 'Unknown Equipment'} - {quantity} pcs
                         <button 
                           type="button" 
                           onClick={() => removeEquipment(eqId)}
@@ -779,10 +932,20 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
           <button 
             type="submit" 
             className="submit-button" 
-            disabled={loading}
+            disabled={loading || conflictDates.length > 0}
+            style={{
+              backgroundColor: conflictDates.length > 0 ? '#ccc' : '',
+              cursor: conflictDates.length > 0 ? 'not-allowed' : 'pointer'
+            }}
           >
-            {loading ? 'SUBMITTING...' : 'SUBMIT REQUEST'}
+            {conflictDates.length > 0 ? 'DATE CONFLICT - CANNOT SUBMIT' : 
+             loading ? 'SUBMITTING...' : 'SUBMIT REQUEST'}
           </button>
+          {conflictDates.length > 0 && (
+            <p style={{color: '#f44336', textAlign: 'center', marginTop: '10px'}}>
+              Please select different dates. The venue "{formData.venue}" is already booked on the selected date(s).
+            </p>
+          )}
         </div>
       </form>
     </div>

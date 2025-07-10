@@ -100,17 +100,22 @@ function AppContent() {
   // Determine if navbar should be shown
   const showNavbar = clientNavbarRoutes.includes(location.pathname) || adminNavbarRoutes.includes(location.pathname) || approverNavbarRoutes.includes(location.pathname);
 
+  const isPublicRoute = location.pathname === '/' || location.pathname === '/register';
+  
   return (
     <>
       {showNavbar && <Navbar isAdminPage={isAdminRoute} isApproverPage={isApproverRoute} />}
       
-      <div className="app-container">
+      {isPublicRoute ? (
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-        
-          {/* Client routes */}
+        </Routes>
+      ) : (
+        <div className="app-container">
+          <Routes>
+            {/* Client routes */}
           <Route path="/dashboard" element={
             <ProtectedRoute element={<ClientDashboard />} />
           } />
@@ -187,11 +192,12 @@ function AppContent() {
 
           
           {/* VPO routes */}
-          <Route path="/vpo" element={
-            <ProtectedRoute element={<VPO />} requiredRole="vpo" />
-          } />
-        </Routes>
-      </div>
+            <Route path="/vpo" element={
+              <ProtectedRoute element={<VPO />} requiredRole="vpo" />
+            } />
+          </Routes>
+        </div>
+      )}
     </>
   );
 }

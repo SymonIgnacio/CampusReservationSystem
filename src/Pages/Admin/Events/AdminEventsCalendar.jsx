@@ -71,7 +71,7 @@ function AdminEventsCalendar({ isCollapsed }) {
   useEffect(() => {
     const fetchApprovedRequests = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/get_approved_requests.php`, {
+        const response = await fetch(`${API_BASE_URL}/admin_dashboard_approved_events.php`, {
           credentials: 'include',
           mode: 'cors'
         });

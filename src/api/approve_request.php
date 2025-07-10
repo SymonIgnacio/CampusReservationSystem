@@ -40,7 +40,7 @@ try {
 
     try {
         // Get request data
-        $sql = "SELECT * FROM request WHERE request_id = ?";
+        $sql = "SELECT * FROM request WHERE id = ?";
         $stmt = $conn->prepare($sql);
         
         if (!$stmt) {
@@ -63,22 +63,23 @@ try {
         
         // Insert into approved_request table
         $sql = "INSERT INTO approved_request (
-            request_id,
             reference_number,
-            user_id,
             request_by,
             department_organization,
             activity,
             purpose,
+            nature_of_activity,
             date_need_from,
             date_need_until,
             start_time,
             end_time,
+            participants,
+            total_male_attendees,
+            total_female_attendees,
             venue,
-            resource_id,
-            approved_by,
-            approved_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            equipments_needed,
+            approved_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
         
@@ -86,20 +87,22 @@ try {
             throw new Exception("Prepare failed: " . $conn->error);
         }
         
-        $stmt->bind_param("isisssssssssss", 
-            $request['request_id'],
+        $stmt->bind_param("sssssssssssiisss", 
             $request['reference_number'],
-            $request['user_id'],
             $request['request_by'],
             $request['department_organization'],
             $request['activity'],
             $request['purpose'],
+            $request['nature_of_activity'],
             $request['date_need_from'],
             $request['date_need_until'],
-            $request['time_need_from'],
-            $request['time_need_until'],
+            $request['start_time'],
+            $request['end_time'],
+            $request['participants'],
+            $request['total_male_attendees'],
+            $request['total_female_attendees'],
             $request['venue'],
-            $request['resource_id'],
+            $request['equipments_needed'],
             $approved_by
         );
         
@@ -111,31 +114,81 @@ try {
         
         $stmt->close();
         
-        // Update request status
-        $sql = "UPDATE request SET status = 'approved' WHERE request_id = ?";
-        $stmt = $conn->prepare($sql);
+        // Update status based on current status
+        $currentStatus = $request['status'] ?: 'pending_gso';
+        error_log("Current status: " . $currentStatus);
         
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
+        if ($currentStatus === 'pending_gso' || $currentStatus === '' || $currentStatus === null) {
+            // GSO approval - move to VPO pending (DO NOT move to approved_request yet)
+            $sql = "UPDATE request SET status = 'pending_vpo' WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            
+            if (!$stmt) {
+                throw new Exception("Prepare failed: " . $conn->error);
+            }
+            
+            $stmt->bind_param("i", $data['request_id']);
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                throw new Exception("Execute failed: " . $stmt->error);
+            }
+            
+            $stmt->close();
+            
+            // Commit transaction
+            $conn->commit();
+            
+            echo json_encode([
+                "success" => true,
+                "message" => "Request approved by GSO. Sent to VPO for final approval.",
+                "next_status" => "pending_vpo"
+            ]);
+            
+        } else if ($currentStatus === 'pending_vpo') {
+            // VPO approval - NOW move to approved_request table
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                throw new Exception("Execute failed: " . $stmt->error);
+            }
+            
+            $stmt->close();
+            
+            // Delete from request table after successful insert
+            $sql = "DELETE FROM request WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            
+            if (!$stmt) {
+                throw new Exception("Prepare failed: " . $conn->error);
+            }
+            
+            $stmt->bind_param("i", $data['request_id']);
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                throw new Exception("Execute failed: " . $stmt->error);
+            }
+            
+            $stmt->close();
+            
+            // Commit transaction
+            $conn->commit();
+            
+            echo json_encode([
+                "success" => true,
+                "message" => "Request fully approved by VPO. Now available as upcoming event.",
+                "final_approval" => true
+            ]);
+        } else {
+            throw new Exception("Invalid request status for approval: " . $currentStatus);
         }
-        
-        $stmt->bind_param("i", $data['request_id']);
         $result = $stmt->execute();
         
         if (!$result) {
             throw new Exception("Execute failed: " . $stmt->error);
         }
-        
-        $stmt->close();
-        
-        // Commit transaction
-        $conn->commit();
-        
-        // Return success
-        echo json_encode([
-            "success" => true,
-            "message" => "Request approved successfully"
-        ]);
+
     } catch (Exception $e) {
         // Rollback transaction
         $conn->rollback();

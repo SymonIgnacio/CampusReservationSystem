@@ -13,12 +13,13 @@ function AdminRequests() {
   const [processingId, setProcessingId] = useState(null);
   const [requestToDecline, setRequestToDecline] = useState(null);
   const [declineReason, setDeclineReason] = useState('');
+  const [approvedEvents, setApprovedEvents] = useState([]);
 
   // Fetch requests
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_vpo_requests.php', {
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_requests.php', {
         mode: 'cors'
       });
       const data = await response.json();
@@ -39,7 +40,38 @@ function AdminRequests() {
   // Initial fetch
   useEffect(() => {
     fetchRequests();
+    fetchApprovedEvents();
   }, []);
+
+  const fetchApprovedEvents = async () => {
+    try {
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/admin_dashboard_approved_events.php', {
+        mode: 'cors'
+      });
+      const data = await response.json();
+      if (data.success) {
+        setApprovedEvents(data.events || []);
+      }
+    } catch (error) {
+      console.error('Error fetching approved events:', error);
+    }
+  };
+
+  const checkScheduleConflict = (request) => {
+    return approvedEvents.some(event => {
+      const eventVenue = event.venue || event.venue_name;
+      const requestVenue = request.venue;
+      
+      if (eventVenue !== requestVenue) return false;
+      
+      const eventStart = new Date(event.date_need_from);
+      const eventEnd = new Date(event.date_need_until);
+      const requestStart = new Date(request.date_need_from);
+      const requestEnd = new Date(request.date_need_until);
+      
+      return requestStart <= eventEnd && requestEnd >= eventStart;
+    });
+  };
 
   // Format date
   const formatDate = (dateStr) => {
@@ -81,7 +113,7 @@ function AdminRequests() {
         credentials: 'include',
         mode: 'cors',
         body: JSON.stringify({ 
-          id: currentRequest.id, 
+          request_id: currentRequest.id, 
           approvedBy: 'Admin' // This could be replaced with actual admin name from session
         }),
       });
@@ -223,16 +255,22 @@ function AdminRequests() {
                     </div>
                   </td>
                   <td>
-                    <span className={`status-badge ${request.status.replace('_', '-')}`}>
+                    <span className={`status-badge ${(request.status || 'pending-gso').replace('_', '-')}`}>
                       {request.status === 'pending_gso' ? 'Pending (GSO)' :
                        request.status === 'pending_vpo' ? 'Pending (VPO)' :
                        request.status === 'declined_gso' ? 'Declined by GSO' :
                        request.status === 'declined_vpo' ? 'Declined by VPO' :
+                       (!request.status || request.status === '') ? 'Pending (GSO)' :
                        request.status.toUpperCase()}
                     </span>
+                    {checkScheduleConflict(request) && (
+                      <div style={{color: '#ff9800', fontSize: '12px', marginTop: '4px'}}>
+                        ⚠️ Schedule Conflict
+                      </div>
+                    )}
                   </td>
                   <td>
-                    {(request.status === 'pending_gso' || request.status === 'pending_vpo') && (
+                    {(request.status === 'pending_gso' || request.status === 'pending_vpo' || !request.status || request.status === '') && (
                       <div className="action-buttons">
                         <button 
                           className="approve-btn"
@@ -240,7 +278,7 @@ function AdminRequests() {
                           disabled={processingId === request.id}
                         >
                           {processingId === request.id ? 'Processing...' : 
-                           (request.status === 'pending_gso' ? 'GSO Approve' : 'VPO Approve')}
+                           (request.status === 'pending_vpo' ? 'VPO Approve' : 'GSO Approve')}
                         </button>
                         <button 
                           className="decline-btn"

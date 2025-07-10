@@ -442,8 +442,8 @@ function AdminDashboard({ isCollapsed }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEvents.map(event => (
-                    <tr key={getFieldValue(event, ['id', 'request_id'])}>
+                  {filteredEvents.map((event, index) => (
+                    <tr key={`${getFieldValue(event, ['id', 'request_id'])}-${index}`}>
                       <td>{getFieldValue(event, ['activity', 'name', 'title', 'event_name'])}</td>
                       <td>{getFieldValue(event, ['date'])}</td>
                       <td>{getFieldValue(event, ['time'])}</td>

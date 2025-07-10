@@ -6,6 +6,8 @@ function AdminTransactions({ isCollapsed }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   useEffect(() => {
     fetchTransactions();
@@ -128,7 +130,14 @@ function AdminTransactions({ isCollapsed }) {
               </thead>
               <tbody>
                 {filteredTransactions.map((transaction, index) => (
-                  <tr key={index}>
+                  <tr 
+                    key={index}
+                    onClick={() => {
+                      setSelectedTransaction(transaction);
+                      setShowDetailsModal(true);
+                    }}
+                    style={{cursor: 'pointer'}}
+                  >
                     <td>{transaction.reference_number || 'N/A'}</td>
                     <td>{transaction.event_name || transaction.activity || 'N/A'}</td>
                     <td>{transaction.request_by || `${transaction.firstname || ''} ${transaction.lastname || ''}`.trim() || transaction.requestor_name || 'N/A'}</td>
@@ -147,6 +156,53 @@ function AdminTransactions({ isCollapsed }) {
           </div>
         ) : (
           <p className="no-transactions">No transactions found.</p>
+        )}
+
+        {/* Transaction Details Modal */}
+        {showDetailsModal && selectedTransaction && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <button 
+                className="close-modal-btn"
+                onClick={() => setShowDetailsModal(false)}
+              >
+                &times;
+              </button>
+              <div className="transaction-details">
+                <h2>Transaction Details</h2>
+                <div className="details-grid">
+                  <div><strong>Reference Number:</strong> {selectedTransaction.reference_number || 'N/A'}</div>
+                  <div><strong>Activity:</strong> {selectedTransaction.event_name || selectedTransaction.activity || 'N/A'}</div>
+                  <div><strong>Requester:</strong> {selectedTransaction.request_by || 'N/A'}</div>
+                  <div><strong>Department:</strong> {selectedTransaction.department_organization || 'N/A'}</div>
+                  <div><strong>Purpose:</strong> {selectedTransaction.purpose || 'N/A'}</div>
+                  <div><strong>Venue:</strong> {selectedTransaction.venue || 'N/A'}</div>
+                  <div><strong>Date From:</strong> {formatDate(selectedTransaction.date_need_from)}</div>
+                  <div><strong>Date Until:</strong> {formatDate(selectedTransaction.date_need_until)}</div>
+                  <div><strong>Time:</strong> {selectedTransaction.start_time} - {selectedTransaction.end_time}</div>
+                  <div><strong>Participants:</strong> {selectedTransaction.participants || 'N/A'}</div>
+                  <div><strong>Male Attendees:</strong> {selectedTransaction.total_male_attendees || 0}</div>
+                  <div><strong>Female Attendees:</strong> {selectedTransaction.total_female_attendees || 0}</div>
+                  <div><strong>Total Attendees:</strong> {selectedTransaction.total_attendees || 0}</div>
+                  <div><strong>Equipment:</strong> {selectedTransaction.equipments_needed || 'None'}</div>
+                  <div><strong>Status:</strong> 
+                    <span className={getStatusBadgeClass(selectedTransaction.display_status)}>
+                      {selectedTransaction.display_status.toUpperCase()}
+                    </span>
+                  </div>
+                  {selectedTransaction.approved_by && (
+                    <div><strong>Approved By:</strong> {selectedTransaction.approved_by}</div>
+                  )}
+                  {selectedTransaction.reason && (
+                    <div className="decline-reason">
+                      <strong>Decline Reason:</strong>
+                      <p>{selectedTransaction.reason}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

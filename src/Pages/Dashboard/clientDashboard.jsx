@@ -65,7 +65,7 @@ function ClientDashboard({ isCollapsed }) {
   useEffect(() => {
     const fetchApprovedRequests = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/get_approved_requests.php`, {
+        const response = await fetch(`${API_BASE_URL}/admin_dashboard_approved_events.php`, {
           credentials: 'include',
           mode: 'cors'
         });
@@ -89,7 +89,7 @@ function ClientDashboard({ isCollapsed }) {
         } else {
           console.error("Failed to load approved events:", data.message);
           // Fallback to original calendar events endpoint
-          const fallbackResponse = await fetch(`${API_BASE_URL}/calendar_events.php`, {
+          const fallbackResponse = await fetch(`${API_BASE_URL}/admin_dashboard_approved_events.php`, {
             credentials: 'include',
             mode: 'cors'
           });
@@ -247,7 +247,7 @@ function ClientDashboard({ isCollapsed }) {
       // Reset to only approved events
       const fetchApprovedRequests = async () => {
         try {
-          const response = await fetch(`${API_BASE_URL}/get_approved_requests.php`, {
+          const response = await fetch(`${API_BASE_URL}/admin_dashboard_approved_events.php`, {
             credentials: 'include',
             mode: 'cors'
           });
@@ -383,11 +383,14 @@ function ClientDashboard({ isCollapsed }) {
   });
 
   // Separate upcoming and finished events
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Set to start of day for proper comparison
+  
   const upcomingEvents = filteredEvents.filter(event => {
     try {
-      const eventEndDate = event.date_need_until ? new Date(event.date_need_until) : 
-                          (event.end_time ? new Date(event.end_time) : getEventDate(event));
-      return eventEndDate && eventEndDate >= new Date();
+      const eventDate = new Date(event.date_need_from || event.date);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= today;
     } catch (e) {
       console.error('Error filtering upcoming event:', e, event);
       return false;
@@ -396,9 +399,9 @@ function ClientDashboard({ isCollapsed }) {
 
   const finishedEvents = filteredEvents.filter(event => {
     try {
-      const eventEndDate = event.date_need_until ? new Date(event.date_need_until) : 
-                          (event.end_time ? new Date(event.end_time) : getEventDate(event));
-      return eventEndDate && eventEndDate < new Date();
+      const eventDate = new Date(event.date_need_from || event.date);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate < today;
     } catch (e) {
       console.error('Error filtering finished event:', e, event);
       return false;
@@ -488,8 +491,8 @@ function ClientDashboard({ isCollapsed }) {
               <p className="error">{error}</p>
             ) : currentMonthUpcomingEvents.length > 0 ? (
               <ul className="event-list">
-                {currentMonthUpcomingEvents.map(event => (
-                  <li key={event.id || `event-${Math.random()}`} className="event-item upcoming">
+                {currentMonthUpcomingEvents.map((event, index) => (
+                  <li key={`upcoming-${event.id || event.reference_number || Math.random()}-${index}`} className="event-item upcoming">
                     <span className="event-date">
                       {formatEventDate(event)}
                     </span>
@@ -511,8 +514,8 @@ function ClientDashboard({ isCollapsed }) {
               <p className="error-message">{error}</p>
             ) : currentMonthFinishedEvents.length > 0 ? (
               <ul className="event-list">
-                {currentMonthFinishedEvents.map(event => (
-                  <li key={event.id || `event-${Math.random()}`} className="event-item finished">
+                {currentMonthFinishedEvents.map((event, index) => (
+                  <li key={`finished-${event.id || event.reference_number || Math.random()}-${index}`} className="event-item finished">
                     <span className="event-date">
                       {formatEventDate(event)}
                     </span>

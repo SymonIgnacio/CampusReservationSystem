@@ -136,8 +136,8 @@
 .modal-content {
   background: white;
   border-radius: 8px;
-  max-width: 1000px;
-  width: 95vw;
+  max-width: none;
+  width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
@@ -205,6 +205,28 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.range-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.range-group label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+}
+
+.range-group input {
+  margin-top: 5px;
 }
 
 .equipment-options {

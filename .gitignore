@@ -1,39 +1,66 @@
 # Dependencies
-/node_modules
-/.pnp
-.pnp.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Testing
-/coverage
+# Production builds
+build/
+dist/
 
-# Production
-/build
-/dist
-
-# Misc
-.DS_Store
+# Environment variables
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-php_errors.log
+# Firebase config (contains sensitive keys)
+src/firebase.js
 
-# IDE specific files
-.idea/
+# IDE and editor files
 .vscode/
-*.sublime-workspace
-*.sublime-project
+.idea/
+*.swp
+*.swo
+*~
 
-# Local environment
-.env
-# Amazon Q specific
-.amazon-q/
-.amazon-q-cache/
-.amazon-q-logs/
-.amazon-q-config.json
-.amazon-q-credentials
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Temporary folders
+tmp/
+temp/
+
+# Amazon Q rules (exclude from repository)
+.amazonq/
+
+# Database backups
+*.sql
+database_backup/
+
+# PHP temporary files
+*.tmp
+*.temp
+
+# XAMPP logs
+xampp/logs/

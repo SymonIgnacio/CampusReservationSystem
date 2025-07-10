@@ -19,8 +19,10 @@ try {
         throw new Exception("Connection failed: " . $conn->connect_error);
     }
 
-    // Get all pending requests
-    $sql = "SELECT * FROM request WHERE status = 'pending' ORDER BY date_created DESC";
+    // Get only GSO pending requests (admin/GSO should not see VPO pending)
+    $sql = "SELECT * FROM request WHERE status = 'pending_gso' OR status = 'pending' OR status = '' OR status IS NULL ORDER BY date_created DESC";
+    
+    error_log("Admin requests query: " . $sql);
     
     $result = $conn->query($sql);
 

@@ -23,8 +23,8 @@ try {
         throw new Exception("Connection failed: " . $conn->connect_error);
     }
 
-    // Count pending requests from the request table
-    $query = "SELECT COUNT(*) as pending_count FROM request WHERE status = 'pending' OR status IS NULL";
+    // Count only GSO pending requests (admin/GSO should not see VPO pending count)
+    $query = "SELECT COUNT(*) as pending_count FROM request WHERE status = 'pending_gso' OR status = 'pending' OR status = '' OR status IS NULL";
     $result = $conn->query($query);
 
     if (!$result) {
@@ -34,9 +34,18 @@ try {
     $row = $result->fetch_assoc();
     $pendingCount = $row['pending_count'];
 
+    // Also get the actual pending requests for debugging
+    $debugQuery = "SELECT id, reference_number, activity, status FROM request WHERE status = 'pending_gso' OR status = 'pending' OR status = '' OR status IS NULL";
+    $debugResult = $conn->query($debugQuery);
+    $pendingRequests = [];
+    while ($debugRow = $debugResult->fetch_assoc()) {
+        $pendingRequests[] = $debugRow;
+    }
+
     echo json_encode([
         "success" => true,
-        "pending_count" => $pendingCount
+        "pending_count" => $pendingCount,
+        "debug_requests" => $pendingRequests
     ]);
 
     $conn->close();

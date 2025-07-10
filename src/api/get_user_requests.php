@@ -41,7 +41,7 @@ try {
     
     if ($status === 'pending') {
         $query = "SELECT *, status FROM request 
-                 WHERE request_by = :full_name AND status LIKE 'pending%' 
+                 WHERE request_by = :full_name AND (status = 'pending_gso' OR status = 'pending_vpo' OR status = 'pending' OR status = '' OR status IS NULL) 
                  ORDER BY date_created DESC";
         $stmt = $conn->prepare($query);
         $stmt->bindParam(':full_name', $full_name);
@@ -51,6 +51,12 @@ try {
         // Debug log
         error_log('User: ' . $full_name);
         error_log('Pending requests found: ' . count($requests));
+        error_log('Query used: ' . $query);
+        error_log('Looking for user: ' . $full_name);
+        if (count($requests) > 0) {
+            error_log('First request status: ' . ($requests[0]['status'] ?: 'empty'));
+            error_log('All request statuses: ' . json_encode(array_column($requests, 'status')));
+        }
     } 
     else if ($status === 'approved') {
         $query = "SELECT *, 'approved' as status FROM approved_request 

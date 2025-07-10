@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './userManagement.css';
 
 const UserManagement = () => {
-  const [users, setUsers] = useState([
-    { id: 1, username: 'admin', email: 'admin@example.com', role: 'Admin', status: 'Active', lastLogin: '2025-01-07' },
-    { id: 2, username: 'approver', email: 'approver@example.com', role: 'Approver', status: 'Active', lastLogin: '2025-01-06' },
-    { id: 3, username: 'director1', email: 'director@example.com', role: 'Director', status: 'Active', lastLogin: '2025-01-05' }
-  ]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -18,7 +16,34 @@ const UserManagement = () => {
     status: 'Active'
   });
 
-  const roles = ['Student', 'Faculty', 'Approver', 'Admin', 'Director', 'Registrar'];
+  const roles = ['student', 'faculty', 'admin', 'sysadmin', 'vpo'];
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_all_users.php', {
+        credentials: 'include',
+        mode: 'cors'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setUsers(data.users || []);
+        setError(null);
+      } else {
+        throw new Error(data.message || 'Failed to fetch users');
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setError('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     setFormData({

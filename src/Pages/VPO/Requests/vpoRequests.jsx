@@ -3,10 +3,40 @@ import React, { useState, useEffect } from 'react';
 function VPORequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [approvedEvents, setApprovedEvents] = useState([]);
 
   useEffect(() => {
     fetchRequests();
+    fetchApprovedEvents();
   }, []);
+
+  const fetchApprovedEvents = async () => {
+    try {
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/admin_dashboard_approved_events.php');
+      const data = await response.json();
+      if (data.success) {
+        setApprovedEvents(data.events || []);
+      }
+    } catch (error) {
+      console.error('Error fetching approved events:', error);
+    }
+  };
+
+  const checkScheduleConflict = (request) => {
+    return approvedEvents.some(event => {
+      const eventVenue = event.venue || event.venue_name;
+      const requestVenue = request.venue;
+      
+      if (eventVenue !== requestVenue) return false;
+      
+      const eventStart = new Date(event.date_need_from);
+      const eventEnd = new Date(event.date_need_until);
+      const requestStart = new Date(request.date_need_from);
+      const requestEnd = new Date(request.date_need_until);
+      
+      return requestStart <= eventEnd && requestEnd >= eventStart;
+    });
+  };
 
   const fetchRequests = async () => {
     try {
@@ -25,10 +55,11 @@ function VPORequests() {
   const handleApprove = async (requestId) => {
     if (window.confirm('Give final VPO approval to this request?')) {
       try {
-        const response = await fetch('http://localhost/CampusReservationSystem/src/api/vpo_approve_request.php', {
+        const response = await fetch('http://localhost/CampusReservationSystem/src/api/approve_request.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ request_id: requestId })
+          mode: 'cors',
+          body: JSON.stringify({ request_id: requestId, approvedBy: 'VPO' })
         });
         const result = await response.json();
         if (result.success) {
@@ -45,9 +76,10 @@ function VPORequests() {
     const declineReason = prompt('Reason for declining:');
     if (declineReason) {
       try {
-        const response = await fetch('http://localhost/CampusReservationSystem/src/api/vpo_decline_request.php', {
+        const response = await fetch('http://localhost/CampusReservationSystem/src/api/decline_request.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          mode: 'cors',
           body: JSON.stringify({ request_id: requestId, decline_reason: declineReason })
         });
         const result = await response.json();
@@ -105,6 +137,11 @@ function VPORequests() {
                         Decline
                       </button>
                     </div>
+                    {checkScheduleConflict(request) && (
+                      <div style={{color: '#ff9800', fontSize: '12px', marginTop: '4px'}}>
+                        ⚠️ Schedule Conflict
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

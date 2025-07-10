@@ -8,10 +8,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$data = json_decode(file_get_contents('php://input'), true);
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
+
+// Log the received data for debugging
+error_log("Received data: " . $input);
+error_log("Parsed data: " . print_r($data, true));
 
 if (!$data || !isset($data['firebase_uid'])) {
-    echo json_encode(["status" => "error", "message" => "Invalid data"]);
+    error_log("Invalid data or missing firebase_uid");
+    echo json_encode(["status" => "error", "message" => "Invalid data or missing firebase_uid"]);
     exit();
 }
 
@@ -35,7 +41,8 @@ $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 
 if (!$user) {
-    echo json_encode(["status" => "error", "message" => "User not found"]);
+    error_log("User not found for firebase_uid: " . $data['firebase_uid']);
+    echo json_encode(["status" => "error", "message" => "User not found for firebase_uid: " . $data['firebase_uid']]);
     exit();
 }
 
@@ -53,8 +60,8 @@ $ref = 'REQ-' . rand(100000, 999999);
 $nature = (isset($data['activityNature']) && $data['activityNature'] === 'co-curricular') ? 'co-curricular' : 'curricular';
 $equipment = isset($data['equipment']) ? $data['equipment'] : '';
 $participants = isset($data['participants']) ? $data['participants'] : '';
-$malePax = isset($data['malePax']) ? (int)$data['malePax'] : 0;
-$femalePax = isset($data['femalePax']) ? (int)$data['femalePax'] : 0;
+$malePax = isset($data['total_male_attendees']) ? (int)$data['total_male_attendees'] : (isset($data['malePax']) ? (int)$data['malePax'] : 0);
+$femalePax = isset($data['total_female_attendees']) ? (int)$data['total_female_attendees'] : (isset($data['femalePax']) ? (int)$data['femalePax'] : 0);
 
 // Insert request
 $sql = "INSERT INTO request (reference_number, request_by, department_organization, activity, purpose, nature_of_activity, date_need_from, date_need_until, start_time, end_time, participants, total_male_attendees, total_female_attendees, venue, equipments_needed, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -65,7 +72,8 @@ if (!$stmt) {
     exit();
 }
 
-$status = 'pending';
+$status = 'pending_gso'; // Start with GSO approval first
+error_log("Setting status to: " . $status);
 $stmt->bind_param("sssssssssssiisss", 
     $ref,
     $user['full_name'],
@@ -85,10 +93,14 @@ $stmt->bind_param("sssssssssssiisss",
     $status
 );
 
+error_log("Binding parameters: ref=$ref, user={$user['full_name']}, dept={$data['department']}, activity={$data['activity']}, status=$status");
+
 if ($stmt->execute()) {
-    echo json_encode(["status" => "success", "message" => "Request created successfully"]);
+    error_log("Request created successfully with reference: " . $ref);
+    echo json_encode(["status" => "success", "message" => "Request created successfully", "reference" => $ref]);
 } else {
-    echo json_encode(["status" => "error", "message" => "Failed to execute insert"]);
+    error_log("Failed to execute insert: " . $stmt->error);
+    echo json_encode(["status" => "error", "message" => "Failed to execute insert: " . $stmt->error]);
 }
 
 $conn->close();

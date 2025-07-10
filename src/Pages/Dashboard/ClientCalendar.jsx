@@ -25,7 +25,7 @@ const ClientCalendar = () => {
   const fetchData = async () => {
     try {
       // Fetch approved events
-      const eventsResponse = await fetch(`${API_BASE_URL}/get_approved_requests.php`);
+      const eventsResponse = await fetch(`${API_BASE_URL}/admin_dashboard_approved_events.php`);
       const eventsData = await eventsResponse.json();
       
       // Fetch pending requests
@@ -34,6 +34,9 @@ const ClientCalendar = () => {
       
       if (eventsData.success) {
         setEvents(eventsData.events || []);
+        console.log('Loaded approved events:', eventsData.events);
+      } else {
+        console.error('Failed to load approved events:', eventsData.message);
       }
       
       if (requestsData.success) {
