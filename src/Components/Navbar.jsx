@@ -195,34 +195,7 @@ const Navbar = ({ isAdminPage = false, isApproverPage = false }) => {
                             </a>
                             <span className="tooltip">Request Event</span>
                         </li>
-                        <li>
-                            <a href="#" onClick={(e) => {
-                                e.preventDefault();
-                                setShowResourcesMenu(!showResourcesMenu);
-                            }}>
-                                <i className="bx bx-list-ul"></i>
-                                <span className="link-text">RESOURCES</span>
-                            </a>
-                            <span className="tooltip">Resources</span>
-                        </li>
-                        {showResourcesMenu && (
-                            <>
-                                <li className="submenu-item">
-                                    <a href="#" onClick={handleNavigation('/facilities')}>
-                                        <i className="bx bx-building"></i>
-                                        <span className="link-text">FACILITIES</span>
-                                    </a>
-                                    <span className="tooltip">Facilities</span>
-                                </li>
-                                <li className="submenu-item">
-                                    <a href="#" onClick={handleNavigation('/equipment')}>
-                                        <i className="bx bx-wrench"></i>
-                                        <span className="link-text">EQUIPMENT</span>
-                                    </a>
-                                    <span className="tooltip">Equipment</span>
-                                </li>
-                            </>
-                        )}
+
                         <li>
                             <a href="#" onClick={handleNavigation('/settings')}>
                                 <i className="bx bx-cog"></i>

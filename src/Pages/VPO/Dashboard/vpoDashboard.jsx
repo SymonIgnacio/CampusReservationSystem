@@ -39,8 +39,8 @@ const VPODashboard = () => {
 
   const fetchEvents = async () => {
     try {
-      // VPO should only see approved events for oversight, not pending requests
-      const response = await fetch('http://localhost/CampusReservationSystem/src/api/vpo_approved_events.php');
+      // VPO should see the same approved events as GSO
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/admin_dashboard_approved_events.php');
       const data = await response.json();
       if (data.success) {
         setEvents(data.events || []);

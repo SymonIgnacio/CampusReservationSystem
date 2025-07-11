@@ -203,6 +203,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
     eventName: '',
     organizer: '',
     department: 'Select Department',
+    otherDepartment: '',
     purpose: '',
     activityNature: 'curricular',
     otherNature: '',
@@ -243,7 +244,8 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
     'College of Health and Sciences',
     'School of Psychology',
     'College of Maritime Education',
-    'School of Mechanical Engineering'
+    'School of Mechanical Engineering',
+    'Others'
   ];
 
   useEffect(() => {
@@ -294,7 +296,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
           
           const stockMap = {};
           data.equipment.forEach(item => {
-            stockMap[item.equipment_id] = item.available_quantity;
+            stockMap[item.equipment_id] = item.available_quantity || item.quantity_available || 0;
           });
           setEquipmentStock(stockMap);
         }
@@ -370,7 +372,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
       if (data.success && data.equipment) {
         const stockMap = {};
         data.equipment.forEach(item => {
-          stockMap[item.equipment_id] = item.available_quantity;
+          stockMap[item.equipment_id] = item.available_quantity || item.quantity_available || 0;
         });
         setEquipmentStock(stockMap);
         
@@ -399,6 +401,12 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
         ...formData,
         [name]: value,
         otherNature: ''
+      };
+    } else if (name === 'department' && value !== 'Others') {
+      newFormData = {
+        ...formData,
+        [name]: value,
+        otherDepartment: ''
       };
     } else if (name === 'malePax' || name === 'femalePax') {
       const newValue = parseInt(value) || 0;
@@ -506,6 +514,25 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
         setLoading(false);
         return;
       }
+      
+      // Server-side capacity validation
+      const capacityCheck = await fetch(`${API_BASE_URL}/validate_capacity.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          venue: formData.venue,
+          total_attendees: formData.totalPax
+        }),
+      });
+      
+      const capacityResult = await capacityCheck.json();
+      if (!capacityResult.valid) {
+        setError(capacityResult.message);
+        setLoading(false);
+        return;
+      }
       const eventData = {
         activity: formData.eventName,
         purpose: formData.purpose,
@@ -514,7 +541,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
         start_time: formData.timeStart,
         end_time: formData.timeEnd,
         venue: formData.venue,
-        department: formData.department,
+        department: formData.department === 'Others' ? formData.otherDepartment : formData.department,
         participants: formData.participants,
         total_male_attendees: formData.malePax,
         total_female_attendees: formData.femalePax,
@@ -557,6 +584,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
           eventName: '',
           organizer: '',
           department: 'Select Department',
+          otherDepartment: '',
           purpose: '',
           activityNature: 'curricular',
           otherNature: '',
@@ -638,6 +666,17 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
                 <option key={dept} value={dept}>{dept}</option>
               ))}
             </select>
+            {formData.department === 'Others' && (
+              <input 
+                type="text" 
+                name="otherDepartment" 
+                value={formData.otherDepartment} 
+                onChange={handleChange} 
+                placeholder="Please specify department/organization" 
+                required={formData.department === 'Others'}
+                style={{marginTop: '10px'}}
+              />
+            )}
           </div>
         </div>
 
@@ -860,7 +899,7 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
               <option value="">SELECT</option>
               {venues.map(venue => (
                 <option key={venue.id} value={venue.venue}>
-                  {venue.venue}
+                  {venue.venue} (Capacity: {venue.capacity})
                 </option>
               ))}
             </select>
@@ -932,18 +971,42 @@ const RequestVenueForm = ({ onRequestSubmitted }) => {
           <button 
             type="submit" 
             className="submit-button" 
-            disabled={loading || conflictDates.length > 0}
+            disabled={loading || conflictDates.length > 0 || (() => {
+              const selectedVenue = venues.find(v => v.venue === formData.venue);
+              return selectedVenue && selectedVenue.capacity && formData.totalPax > selectedVenue.capacity;
+            })()}
             style={{
-              backgroundColor: conflictDates.length > 0 ? '#ccc' : '',
-              cursor: conflictDates.length > 0 ? 'not-allowed' : 'pointer'
+              backgroundColor: (conflictDates.length > 0 || (() => {
+                const selectedVenue = venues.find(v => v.venue === formData.venue);
+                return selectedVenue && selectedVenue.capacity && formData.totalPax > selectedVenue.capacity;
+              })()) ? '#ccc' : '',
+              cursor: (conflictDates.length > 0 || (() => {
+                const selectedVenue = venues.find(v => v.venue === formData.venue);
+                return selectedVenue && selectedVenue.capacity && formData.totalPax > selectedVenue.capacity;
+              })()) ? 'not-allowed' : 'pointer'
             }}
           >
-            {conflictDates.length > 0 ? 'DATE CONFLICT - CANNOT SUBMIT' : 
-             loading ? 'SUBMITTING...' : 'SUBMIT REQUEST'}
+            {(() => {
+              const selectedVenue = venues.find(v => v.venue === formData.venue);
+              if (selectedVenue && selectedVenue.capacity && formData.totalPax > selectedVenue.capacity) {
+                return 'CAPACITY EXCEEDED - CANNOT SUBMIT';
+              }
+              return conflictDates.length > 0 ? 'DATE CONFLICT - CANNOT SUBMIT' : 
+                     loading ? 'SUBMITTING...' : 'SUBMIT REQUEST';
+            })()}
           </button>
-          {conflictDates.length > 0 && (
+          {(conflictDates.length > 0 || (() => {
+            const selectedVenue = venues.find(v => v.venue === formData.venue);
+            return selectedVenue && selectedVenue.capacity && formData.totalPax > selectedVenue.capacity;
+          })()) && (
             <p style={{color: '#f44336', textAlign: 'center', marginTop: '10px'}}>
-              Please select different dates. The venue "{formData.venue}" is already booked on the selected date(s).
+              {(() => {
+                const selectedVenue = venues.find(v => v.venue === formData.venue);
+                if (selectedVenue && selectedVenue.capacity && formData.totalPax > selectedVenue.capacity) {
+                  return `Cannot submit. Total attendees (${formData.totalPax}) exceeds venue capacity (${selectedVenue.capacity}).`;
+                }
+                return `Please select different dates. The venue "${formData.venue}" is already booked on the selected date(s).`;
+              })()}
             </p>
           )}
         </div>

@@ -75,7 +75,7 @@ function AppContent() {
   const isApproverRoute = location.pathname.startsWith('/approver');
   
   // Show navbar on these routes
-  const clientNavbarRoutes = ['/dashboard', '/requestEvent', '/settings', '/facilities', '/equipment'];
+  const clientNavbarRoutes = ['/dashboard', '/requestEvent', '/settings'];
   const adminNavbarRoutes = [
     '/admin/dashboard', 
     '/admin/events', 
@@ -125,12 +125,7 @@ function AppContent() {
           <Route path="/settings" element={
             <ProtectedRoute element={<Settings />} />
           } />
-          <Route path="/facilities" element={
-            <ProtectedRoute element={<ViewFacilities />} />
-          } />
-          <Route path="/equipment" element={
-            <ProtectedRoute element={<ViewEquipment />} />
-          } />
+
         
           {/* Admin routes */}
           <Route path="/admin/dashboard" element={

@@ -19,3 +19,8 @@
 .app-container {
   margin-left: 250px;
 }
+
+/* Remove margin for VPO page */
+.vpo-container {
+  margin-left: 0 !important;
+}

@@ -10,58 +10,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-// Debug logging
-error_log("Received data: " . json_encode($data));
-
-if (!$data) {
-    echo json_encode(["success" => false, "message" => "No data received"]);
+if (!$data || !isset($data['name']) || !isset($data['location']) || !isset($data['capacity'])) {
+    echo json_encode(["success" => false, "message" => "Missing required fields"]);
     exit();
 }
 
-if (!isset($data['venue']) || empty($data['venue'])) {
-    echo json_encode(["success" => false, "message" => "Venue name is required"]);
+$conn = new mysqli("localhost", "root", "", "campus_db");
+
+if ($conn->connect_error) {
+    echo json_encode(["success" => false, "message" => "Connection failed"]);
     exit();
 }
 
-if (!isset($data['campus']) || empty($data['campus'])) {
-    echo json_encode(["success" => false, "message" => "Campus is required"]);
-    exit();
+$stmt = $conn->prepare("INSERT INTO facilities (venue, campus, capacity, description) VALUES (?, ?, ?, ?)");
+$stmt->bind_param("ssis", $data['name'], $data['location'], $data['capacity'], $data['description']);
+
+if ($stmt->execute()) {
+    echo json_encode(["success" => true, "message" => "Facility added successfully"]);
+} else {
+    echo json_encode(["success" => false, "message" => "Failed to add facility"]);
 }
 
-try {
-    $conn = new mysqli("localhost", "root", "", "campus_db");
-    
-    if ($conn->connect_error) {
-        throw new Exception("Connection failed: " . $conn->connect_error);
-    }
-    
-    $sql = "INSERT INTO facilities (venue, campus, capacity, description) VALUES (?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $capacity = isset($data['capacity']) && $data['capacity'] !== '' ? (int)$data['capacity'] : null;
-    $description = isset($data['description']) && $data['description'] !== '' ? $data['description'] : null;
-    
-    $stmt->bind_param("ssis", 
-        $data['venue'], 
-        $data['campus'], 
-        $capacity, 
-        $description
-    );
-    
-    if ($stmt->execute()) {
-        echo json_encode([
-            "success" => true,
-            "message" => "Facility added successfully",
-            "facility_id" => $conn->insert_id
-        ]);
-    } else {
-        throw new Exception("Failed to add facility: " . $stmt->error);
-    }
-    
-    $conn->close();
-} catch (Exception $e) {
-    echo json_encode([
-        "success" => false,
-        "message" => $e->getMessage()
-    ]);
-}
+$conn->close();
 ?>

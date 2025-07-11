@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import './vpoRequests.css';
 
 function VPORequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [approvedEvents, setApprovedEvents] = useState([]);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   useEffect(() => {
     fetchRequests();
@@ -116,13 +119,20 @@ function VPORequests() {
             </thead>
             <tbody>
               {requests.map(request => (
-                <tr key={request.id}>
+                <tr 
+                  key={request.id}
+                  onClick={() => {
+                    setSelectedRequest(request);
+                    setShowDetailsModal(true);
+                  }}
+                  style={{cursor: 'pointer'}}
+                >
                   <td>{request.reference_number}</td>
                   <td>{request.activity}</td>
                   <td>{request.department_organization}</td>
                   <td>{request.date_need_from}</td>
                   <td>{request.venue}</td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     <div className="action-buttons">
                       <button 
                         className="approve-btn"
@@ -147,6 +157,41 @@ function VPORequests() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      
+      {/* Request Details Modal */}
+      {showDetailsModal && selectedRequest && (
+        <div className="modal-overlay" onClick={() => setShowDetailsModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="close-modal-btn"
+              onClick={() => setShowDetailsModal(false)}
+            >
+              &times;
+            </button>
+            <div className="request-details">
+              <h2>Request Details</h2>
+              <div className="details-grid">
+                <div><strong>Reference Number:</strong> {selectedRequest.reference_number}</div>
+                <div><strong>Activity:</strong> {selectedRequest.activity}</div>
+                <div><strong>Department:</strong> {selectedRequest.department_organization}</div>
+                <div><strong>Purpose:</strong> {selectedRequest.purpose}</div>
+                <div><strong>Nature:</strong> {selectedRequest.nature_of_activity}</div>
+                <div><strong>Date From:</strong> {selectedRequest.date_need_from}</div>
+                <div><strong>Date Until:</strong> {selectedRequest.date_need_until}</div>
+                <div><strong>Time:</strong> {selectedRequest.start_time} - {selectedRequest.end_time}</div>
+                <div><strong>Venue:</strong> {selectedRequest.venue}</div>
+                <div><strong>Participants:</strong> {selectedRequest.participants || 'Not specified'}</div>
+                <div><strong>Male Attendees:</strong> {selectedRequest.total_male_attendees || 0}</div>
+                <div><strong>Female Attendees:</strong> {selectedRequest.total_female_attendees || 0}</div>
+                <div><strong>Total Attendees:</strong> {selectedRequest.total_attendees || 0}</div>
+                <div><strong>Equipment:</strong> {selectedRequest.equipments_needed || 'None'}</div>
+                <div><strong>Requested By:</strong> {selectedRequest.request_by}</div>
+                <div><strong>Date Created:</strong> {selectedRequest.date_created}</div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

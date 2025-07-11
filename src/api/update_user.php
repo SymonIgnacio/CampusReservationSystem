@@ -1,5 +1,6 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
@@ -22,14 +23,26 @@ try {
         throw new Exception("Connection failed: " . $conn->connect_error);
     }
     
-    $sql = "UPDATE users SET username = ?, email = ?, role = ? WHERE user_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssi", 
-        $data['username'], 
-        $data['email'], 
-        $data['role'], 
-        $data['user_id']
-    );
+    // Update firstname and lastname if provided, otherwise keep existing values
+    if (isset($data['firstname']) && isset($data['lastname'])) {
+        $sql = "UPDATE users SET firstname = ?, lastname = ?, username = ?, email = ? WHERE user_id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssssi", 
+            $data['firstname'],
+            $data['lastname'], 
+            $data['username'], 
+            $data['email'], 
+            $data['user_id']
+        );
+    } else {
+        $sql = "UPDATE users SET username = ?, email = ? WHERE user_id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssi", 
+            $data['username'], 
+            $data['email'], 
+            $data['user_id']
+        );
+    }
     
     if ($stmt->execute()) {
         echo json_encode([

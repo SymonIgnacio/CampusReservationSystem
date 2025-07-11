@@ -60,11 +60,11 @@ const AccountSettings = () => {
           user_id: user.user_id,
           firstname: formData.firstname,
           lastname: formData.lastname,
+          username: user.username,
           email: formData.email,
           phone: formData.phone,
           department: formData.department
         }),
-        credentials: 'include',
         mode: 'cors'
       });
 
@@ -119,7 +119,6 @@ const AccountSettings = () => {
           current_password: formData.currentPassword,
           new_password: formData.newPassword
         }),
-        credentials: 'include',
         mode: 'cors'
       });
 
