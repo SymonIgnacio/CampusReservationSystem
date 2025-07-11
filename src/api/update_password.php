@@ -1,50 +1,75 @@
 <?php
 header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
     exit();
 }
 
-$db_host = "localhost";
-$db_name = "campus_db";
-$db_user = "root";
-$db_pass = "";
+$data = json_decode(file_get_contents('php://input'), true);
+
+if (!$data || !isset($data['user_id']) || !isset($data['new_password'])) {
+    echo json_encode(["success" => false, "message" => "Missing required data"]);
+    exit();
+}
 
 try {
-    $json = file_get_contents('php://input');
-    $data = json_decode($json, true);
+    $conn = new mysqli("localhost", "root", "", "campus_db");
     
-    if (!$data || !isset($data['user_id']) || !isset($data['current_password']) || !isset($data['new_password'])) {
-        throw new Exception("Missing required fields");
+    if ($conn->connect_error) {
+        throw new Exception("Connection failed: " . $conn->connect_error);
     }
     
-    $conn = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_pass);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // Get user info
+    $sql = "SELECT firebase_uid, password FROM users WHERE user_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $data['user_id']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
     
-    // Verify current password
-    $stmt = $conn->prepare("SELECT password FROM users WHERE user_id = ?");
-    $stmt->execute([$data['user_id']]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$user || !password_verify($data['current_password'], $user['password'])) {
-        throw new Exception("Current password is incorrect");
+    if (!$user) {
+        throw new Exception("User not found");
     }
     
-    // Update password
-    $hashedPassword = password_hash($data['new_password'], PASSWORD_DEFAULT);
-    $stmt = $conn->prepare("UPDATE users SET password = ? WHERE user_id = ?");
-    $stmt->execute([$hashedPassword, $data['user_id']]);
+    // If user has firebase_uid, they use Firebase auth (no password check needed)
+    if ($user['firebase_uid']) {
+        // For Firebase users, we don't store passwords in database
+        // The password change should be handled on the frontend with Firebase
+        echo json_encode([
+            "success" => true,
+            "message" => "Password updated successfully",
+            "firebase_user" => true
+        ]);
+    } else {
+        // For local users, verify current password if provided
+        if (isset($data['current_password'])) {
+            if (!password_verify($data['current_password'], $user['password'])) {
+                throw new Exception("Current password is incorrect");
+            }
+        }
+        
+        // Update password in database
+        $hashedPassword = password_hash($data['new_password'], PASSWORD_DEFAULT);
+        $sql = "UPDATE users SET password = ? WHERE user_id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("si", $hashedPassword, $data['user_id']);
+        
+        if ($stmt->execute()) {
+            echo json_encode([
+                "success" => true,
+                "message" => "Password updated successfully",
+                "firebase_user" => false
+            ]);
+        } else {
+            throw new Exception("Failed to update password: " . $stmt->error);
+        }
+    }
     
-    echo json_encode([
-        "success" => true,
-        "message" => "Password updated successfully"
-    ]);
-    
+    $conn->close();
 } catch (Exception $e) {
     echo json_encode([
         "success" => false,

@@ -109,25 +109,41 @@ const AccountSettings = () => {
     setSuccess(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/update_password.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.user_id,
-          current_password: formData.currentPassword,
-          new_password: formData.newPassword
-        }),
-        mode: 'cors'
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
+      // If user has Firebase UID, update password in Firebase
+      if (user.firebase_uid) {
+        const { updatePassword, reauthenticateWithCredential, EmailAuthProvider } = await import('firebase/auth');
+        const { auth } = await import('../../firebase');
+        
+        // Re-authenticate user first
+        const credential = EmailAuthProvider.credential(user.email, formData.currentPassword);
+        await reauthenticateWithCredential(auth.currentUser, credential);
+        
+        // Update password in Firebase
+        await updatePassword(auth.currentUser, formData.newPassword);
+        
         setSuccess('Password updated successfully!');
       } else {
-        throw new Error(result.message || 'Failed to update password');
+        // For local users, use the API
+        const response = await fetch(`${API_BASE_URL}/update_password.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: user.user_id,
+            current_password: formData.currentPassword,
+            new_password: formData.newPassword
+          }),
+          mode: 'cors'
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          setSuccess('Password updated successfully!');
+        } else {
+          throw new Error(result.message || 'Failed to update password');
+        }
       }
       
       // Clear password fields
@@ -139,7 +155,13 @@ const AccountSettings = () => {
       }));
     } catch (err) {
       console.error('Error updating password:', err);
-      setError(`Failed to update password: ${err.message}`);
+      if (err.code === 'auth/wrong-password') {
+        setError('Current password is incorrect');
+      } else if (err.code === 'auth/weak-password') {
+        setError('New password is too weak');
+      } else {
+        setError(`Failed to update password: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
