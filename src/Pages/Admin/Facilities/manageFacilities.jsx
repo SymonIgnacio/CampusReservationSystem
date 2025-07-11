@@ -3,6 +3,7 @@ import './manageFacilities.css';
 
 function ManageFacilities() {
   const [facilities, setFacilities] = useState([]);
+  const [campuses, setCampuses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -18,6 +19,7 @@ function ManageFacilities() {
   // Fetch facilities on component mount
   useEffect(() => {
     fetchFacilities();
+    fetchCampuses();
   }, []);
 
   // Fetch facilities from API
@@ -42,6 +44,20 @@ function ManageFacilities() {
       setError('Failed to load facilities. Please try again later.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch unique campuses from facilities
+  const fetchCampuses = async () => {
+    try {
+      const response = await fetch('http://localhost/CampusReservationSystem/src/api/get_campuses.php');
+      const data = await response.json();
+      
+      if (data.success) {
+        setCampuses(data.campuses || []);
+      }
+    } catch (error) {
+      console.error('Error fetching campuses:', error);
     }
   };
 
@@ -261,11 +277,9 @@ function ManageFacilities() {
                   required
                 >
                   <option value="">Select Campus</option>
-                  <option value="Main Campus">Main Campus</option>
-                  <option value="East Campus">East Campus</option>
-                  <option value="West Campus">West Campus</option>
-                  <option value="North Campus">North Campus</option>
-                  <option value="South Campus">South Campus</option>
+                  {campuses.map(campus => (
+                    <option key={campus} value={campus}>{campus}</option>
+                  ))}
                 </select>
               </div>
               <div className="form-group">
@@ -328,11 +342,9 @@ function ManageFacilities() {
                   required
                 >
                   <option value="">Select Campus</option>
-                  <option value="Main Campus">Main Campus</option>
-                  <option value="East Campus">East Campus</option>
-                  <option value="West Campus">West Campus</option>
-                  <option value="North Campus">North Campus</option>
-                  <option value="South Campus">South Campus</option>
+                  {campuses.map(campus => (
+                    <option key={campus} value={campus}>{campus}</option>
+                  ))}
                 </select>
               </div>
               <div className="form-group">

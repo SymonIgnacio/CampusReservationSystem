@@ -130,9 +130,24 @@ const UserManagement = () => {
     }
   };
 
-  const handleResetPassword = (userId) => {
-    if (window.confirm('Send password reset email to this user?')) {
-      alert('Password reset email sent successfully!');
+  const handleResetPassword = async (userId) => {
+    if (window.confirm('Generate new password for this user?')) {
+      try {
+        const response = await fetch('http://localhost/CampusReservationSystem/src/api/reset_password.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId })
+        });
+        const result = await response.json();
+        if (result.success) {
+          alert(`Password reset successfully!\nNew password: ${result.new_password}\n\nPlease share this with the user.`);
+        } else {
+          alert('Failed to reset password: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while resetting password');
+      }
     }
   };
 
